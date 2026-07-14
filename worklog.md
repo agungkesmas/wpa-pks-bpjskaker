@@ -595,3 +595,91 @@ Stage Summary:
 - ✅ Konsep PKS Payung: wpa_faskes_group + tipe A/B/C/D (siap untuk iterasi berikutnya)
 - ✅ Vercel Cron Job terdaftar: /api/cron/mutasi daily 8AM WIB
 - ✅ Production: https://wpa-pks-bpjskaker.vercel.app
+
+---
+Task ID: FASE-1-PLKK
+Agent: main
+Task: Fresh build Manajemen PLKK — 6 role final + pipeline universal
+
+Work Log:
+- Rename Vercel project: wpa-pks-bpjskaker → manajemen-plkk
+  (URL production: https://manajemen-plkk.vercel.app, URL lama tetap aktif)
+- Schema final di Supabase:
+  • 6 role final: super_admin, kepala_bidang, case_manager, penata_pelayanan, pic_rs, legal_rs
+  • Hapus: admin_kantor, legal_bpjs (tidak ada di realitas cabang)
+  • Tabel wpa_pipeline (universal tracking, anti-tumbang by design)
+  • Tabel wpa_pipeline_log (immutable audit per transisi tahap)
+  • Tabel wpa_pipeline_takeover_log (anti-tumbang: siapa ambil alih kapan)
+  • Tabel wpa_pipeline_tahap_config (32 config: 5 jenis × 4-8 tahap)
+  • Storage bucket wpa-pengajuan-docs (untuk upload dokumen pengajuan)
+- Update existing users: admin_kantor → super_admin (admin@wpa, admin.cirebon)
+- Tambah sample Penata Pelayanan: pp.cirebon@wpa.local / PPCirebon2026!#
+
+UI Final:
+- 6 role layout (RoleLayout component reusable)
+- RoleShell dengan menu final per role (konsisten):
+  • Super Admin: 6 menu (Dashboard, Kantor Cabang, Semua User, Template Mandatori, Pengajuan, Audit Log)
+  • Kepala Bidang: 6 menu (Dashboard, Approval, Dokumen Legal, Tugas Cabang, Pengajuan, Laporan)
+  • Case Manager: 5 menu (Dashboard, Tugas Saya, Tugas Cabang, Faskes Mitra, Bank Tarif)
+  • Penata Pelayanan: 4 menu (Dashboard, Tugas Saya, Tugas Cabang, Faskes Mitra)
+  • PIC RS: 5 menu (Dashboard, Ajukan PKS Baru, Pengajuan Saya, Dokumen Saya, Bank Tarif)
+  • Legal RS: 4 menu (Dashboard, Review, Dokumen Legal, Audit Log)
+- 6 dashboard per role (skeleton, ambil data real dari DB):
+  • Super Admin: stats kantor/user/pengajuan/PKS + user by role + pengajuan aktif
+  • Kepala Bidang: antrean approval + tugas cabang + KPI breached
+  • Case Manager: tugas saya + tugas cabang + SLA tracking + Ambil Alih
+  • Penata Pelayanan: tugas saya + tugas cabang (Ambil Alih, anti-tumbang)
+  • PIC RS: status PKS + countdown hari + pengajuan saya + tombol "Ajukan PKS Baru"
+  • Legal RS: antrean review + dokumen ditandatangani + audit log
+- Standar bahasa baku apply (konsisten lintas role):
+  • Status: Diajukan, Ditinjau, Diverifikasi, Negosiasi, Didraft, Disetujui, Direview, Ditandatangani
+  • Action: Ajukan, Tinjau, Verifikasi, Setujui, Tolak, Batalkan, Alihkan, Tandatangani, Ambil Alih
+- 24 sub-route placeholders (siap diisi modul detail di Fase 2-6)
+- Hapus route admin_kantor (tidak ada di 6 role final)
+
+Test e2e via API:
+- Login semua 6 role: ✓ sukses, redirect ke dashboard masing-masing
+  • super.admin → /super_admin
+  • kabid.cirebon → /kepala_bidang
+  • cm.cirebon → /case_manager
+  • pp.cirebon → /penata_pelayanan
+  • pic.rsjuanda → /pic_rs
+  • legal.rsjuanda → /legal_rs
+
+Test visual via Agent Browser:
+- Super Admin: dashboard 6 menu, stats 2 kantor/9 user, quick actions
+- Case Manager: dashboard 5 menu, stats 0 tugas saya/0 tugas cabang/1 faskes mitra
+- PIC RS: dashboard 5 menu, deteksi faskes RS Juanda, tombol "Ajukan PKS Baru" menonjol
+
+Bug fix selama dev:
+- zod .uuid() tolak UUID v0 (ID Default cabang 00000000-0000-...-001) 
+  → pakai regex yang accept any UUID version
+- PostgREST 'more than one relationship' (wpa_user_mutasi 2 FK ke wpa_users)
+  → hapus join, fetch user separately
+- enum wpa_user_role tidak punya 'penata_pelayanan' saat first apply
+  → add value explicitly + commit sebelum pakai
+- alter column type text → enum gagal jika ada value yang tidak di enum baru
+  → handle via step: drop enum cascade → recreate → alter column
+
+Stage Summary:
+- ✅ Fresh build Fase 1 selesai (6 role, pipeline universal, standar bahasa, menu konsisten)
+- ✅ 9 user aktif dengan 6 role terwakili semua (super_admin×3, kepala_bidang, case_manager×2, penata_pelayanan, pic_rs, legal_rs)
+- ✅ Pipeline schema ready (32 tahap config untuk 5 jenis pengajuan)
+- ✅ Vercel project renamed: manajemen-plkk
+- ✅ Production live: https://wpa-pks-bpjskaker.vercel.app (URL baru: https://manajemen-plkk.vercel.app)
+- ⏳ Fase 2: PIC RS Onboarding & Form Pengajuan Baru (next)
+- ⏳ Fase 3: Template Mandatori & Konsistensi (hash per bab)
+- ⏳ Fase 4: Pipeline Universal & Tracking (state machine + Ambil Alih)
+- ⏳ Fase 5: Drafting PKS & Adendum
+- ⏳ Fase 6: Tracking, Reminder & KPI
+
+Daftar Akun Lengkap (6 role):
+- super.admin@wpa.local / SuperAdmin2026!# → super_admin (Anda, super user)
+- admin@wpa.local / AdminWPA2026!# → super_admin (default, bisa dihapus)
+- admin.cirebon@wpa.local / AdminCirebon2026!# → super_admin (cabang Cirebon)
+- kabid.cirebon@wpa.local / KabidCirebon2026!# → kepala_bidang (Cirebon)
+- cm.cirebon@wpa.local / CMCirebon2026!# → case_manager (Cirebon)
+- budi.cm@bpjsketenagakerjaan.go.id / ur&SiqPBGfk9 → case_manager (Default)
+- pp.cirebon@wpa.local / PPCirebon2026!# → penata_pelayanan (Cirebon)
+- pic.rsjuanda@wpa.local / PicRSJ2026!# → pic_rs (RS Juanda Kuningan)
+- legal.rsjuanda@wpa.local / LegalRSJ2026!# → legal_rs (RS Juanda Kuningan)
