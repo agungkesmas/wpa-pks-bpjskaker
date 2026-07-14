@@ -523,3 +523,75 @@ Stage Summary (Keputusan Final):
 === PRIORITAS 1: KANTOR CABANG + USER MANAGEMENT TERINTEGRASI ===
 Setelah keputusan ini, saya mulai eksekusi Prioritas 1.
 Estimasi: 12 todo items, 1 sesi panjang atau 2 sesi normal.
+
+---
+Task ID: PRIORITAS-1
+Agent: main
+Task: Bangun Prioritas 1 — Kantor Cabang + User Management terintegrasi
+
+Work Log:
+- Schema: tambah role super_admin, tabel wpa_faskes_group, wpa_user_faskes (junction), 
+  wpa_user_mutasi, alter wpa_faskes (group_id, tipe), wpa_pks (is_payung, parent_pks_payung_id),
+  wpa_users (profile_photo_url, email_verified_at, nip, temp_password, must_change_password)
+- Seed super_admin: super.admin@wpa.local / SuperAdmin2026!# (dari env var)
+- Migrate existing wpa_users.faskes_id → wpa_user_faskes junction (2 rows: PIC RS + Legal RS Juanda)
+
+API (12 endpoint baru):
+- /api/kantor (GET list dengan stats, POST create super_admin only)
+- /api/kantor/[id] (GET, PATCH)
+- /api/kantor/[id]/users (GET users per kantor dengan mutasi pending)
+- /api/mutasi/create (POST, mode instant atau scheduled)
+- /api/mutasi/list (GET, filter user/kantor/status)
+- /api/mutasi/cancel (POST)
+- /api/cron/mutasi (GET, daily cron auto-apply scheduled mutasi)
+- /api/profile/password (POST self-service)
+- /api/profile/email (POST dengan verifikasi password lama)
+- /api/profile/update (POST phone)
+- /api/profile/photo (POST upload foto ke Supabase Storage)
+- /api/faskes/multi-attach (GET/POST/DELETE untuk 1 PIC multi-faskes)
+- /api/print/id-card (GET HTML A6 landscape)
+- /api/print/slip-a4 (GET HTML A4 portrait onboarding)
+- /api/print/kartu-mutasi (GET HTML A4 surat keterangan mutasi)
+
+UI:
+- /super_admin (dashboard super admin dengan stats 2 cabang, 8 user)
+- /super_admin/kantor (list cards dengan stats users/faskes/pks)
+- /super_admin/kantor/[id] (detail 4 tabs: Users/Info/Faskes/Stats)
+- /super_admin/users (flat list semua user)
+- /super_admin/audit (audit log viewer 200 entri)
+- /admin_kantor/kantor & [id] (reuse super_admin)
+- /admin_kantor/users (redirect ke detail kantor)
+- /profile (self-service: password, phone, foto, email change)
+- RoleShell: super_admin theme rose + Profile floating button
+
+Test e2e (via Agent Browser + API):
+1. Login super admin → redirect /super_admin → dashboard OK
+2. List kantor: 2 cards (Cirebon 5 user/1 faskes, Default 2 user/0 faskes)
+3. Detail Cirebon: 4 tabs tampil, Users tab menampilkan 5 user dengan avatar+role badge
+4. Tambah User dialog: form lengkap (Nama, NIP, Email, Role, Phone, Password auto-generate)
+5. Print ID Card: terbuka di new tab, HTML render A6 landscape dengan logo+foto+info
+6. Print Slip A4: A4 portrait dengan instruksi login
+7. Profile self-service: ubah password (verify lama), ubah email (verify lama, auto-logout)
+8. Mutasi scheduled (efektif 1 bulan depan): status=pending, applied=false
+9. Mutasi instant (efektif hari ini): langsung apply, user pindah kantor
+10. Cancel mutasi: status → cancelled
+11. Cron job: terdaftar di vercel.json (daily 8AM WIB)
+
+Bug fix selama dev:
+- zod .uuid() tolak UUID v0 (00000000-0000-0000-0000-000000000001 ID Default) 
+  → Fix: pakai regex /[0-9a-fA-F]{8}-...-{12}/ accept any UUID version
+- PostgREST error 'more than one relationship' (wpa_user_mutasi punya 2 FK ke wpa_users)
+  → Fix: hapus join wpa_users di mutasi list & kartu-mutasi print, fetch separately
+- TableHeader typo (TableTable) di audit page → fix
+
+Stage Summary:
+- ✅ 9 halaman baru + 4 component baru + 12 API endpoint baru
+- ✅ Super admin login & akses semua cabang works
+- ✅ User management integrated dalam tab kantor (bukan flat lagi)
+- ✅ Mutasi antar cabang: instant + scheduled (cron daily apply)
+- ✅ Self-service: password + email + phone + foto profil
+- ✅ Print: ID Card (A6), Slip A4 (onboarding), Kartu Mutasi (A4)
+- ✅ Multi-faskes: 1 PIC bisa attach ke beberapa faskes (junction table)
+- ✅ Konsep PKS Payung: wpa_faskes_group + tipe A/B/C/D (siap untuk iterasi berikutnya)
+- ✅ Vercel Cron Job terdaftar: /api/cron/mutasi daily 8AM WIB
+- ✅ Production: https://wpa-pks-bpjskaker.vercel.app
