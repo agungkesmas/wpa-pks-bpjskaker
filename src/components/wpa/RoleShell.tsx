@@ -70,9 +70,10 @@ const ROLE_NAV: Record<string, { href: string; label: string; icon: any }[]> = {
   pic_rs: [
     { href: '/pic_rs', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/pic_rs/pks', label: 'PKS Saya', icon: FileSignature },
+    { href: '/pic_rs/tarif', label: 'Upload Tarif', icon: Wallet },
     { href: '/pic_rs/dropping', label: 'Dropping Pusat', icon: ShieldCheck },
     { href: '/pic_rs/perpanjangan', label: 'Ajukan Perpanjangan', icon: Calendar },
-    { href: '/pic_rs/adendum', label: 'Ajukan Adendum Harga', icon: Wallet },
+    { href: '/pic_rs/adendum', label: 'Ajukan Adendum Harga', icon: FileText },
     { href: '/pic_rs/dokumen', label: 'Dokumen Kredensial', icon: FileText },
   ],
   legal_rs: [
