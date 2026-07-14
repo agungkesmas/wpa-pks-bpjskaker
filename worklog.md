@@ -400,3 +400,73 @@ Akun yang dibuat (semua password pakai env var, bukan hardcoded):
 - admin.cirebon@wpa.local / SEED_ADMIN_CIREBON_PWD env var → admin_kantor Cabang Cirebon
 - pic.rsjuanda@wpa.local / SEED_PIC_RSJUANDA_PWD env var → PIC RS Juanda Kuningan
 - legal.rsjuanda@wpa.local / SEED_LEGAL_RSJUANDA_PWD env var → Legal RS Juanda Kuningan
+
+---
+Task ID: TARIF-V2
+Agent: main
+Task: Bangun ulang skema tarif — acuan per kantor cabang + faskes upload Excel + auto-comparison
+
+Work Log:
+- Audit skema lama: wpa_tarif_bank di-link ke faskes_id → salah konsep (tidak ada acuan regional)
+- Drop wpa_tarif_bank & wpa_tarif_comparison (cascade)
+- Buat 3 tabel baru:
+  • wpa_tarif_acuan: per kantor_cabang + kategori + nama_item + tahun (unique)
+    - sumber: 'manual' (langsung input tarif_acuan) atau 'calculation' (dari sample_data RS)
+    - statistik: tarif_min/max/median/mean/std_dev/sample_count/sample_data jsonb
+  • wpa_tarif_faskes: per faskes + tahun, auto-compare saat upload
+    - status_kewajaran: wajar/perlu_review/tinggi/rendah/ekstrem/no_acuan
+    - tarif_acuan_id, tarif_acuan, selisih, selisih_percent, z_score
+  • wpa_tarif_upload_batch: log per upload (1 file = 1 batch, N items)
+- Buat RPC function wpa_calc_kewajaran(tarif, acuan, std_dev) — immutable, returns table
+- Tambah 11 default kategori di wpa_tarif_kewajaran_rule (kamar, operasi_*, lab, radiologi, dll)
+- Install xlsx (SheetJS) library untuk parse & generate Excel
+
+API Endpoints:
+- GET  /api/tarif/acuan/list — list acuan per kantor cabang (filter kategori, tahun)
+- POST /api/tarif/acuan/create — upsert acuan (manual atau calculation mode)
+- POST /api/tarif/acuan/calc — preview statistik dari sample sebelum save
+- POST /api/tarif/faskes/upload — parse Excel, validate, auto-compare, store
+- GET  /api/tarif/faskes/list — list tarif faskes (filter status, kategori)
+- GET  /api/tarif/comparison — summary per faskes atau detail per item
+- GET  /api/tarif/template — download Excel template (17 item pre-filled, 0 tarif)
+
+UI:
+- /case_manager/tarif — TarifAcuanManager (2 mode: manual & calculation dengan preview)
+  - Form multi-RS sample dengan tombol "Tambah RS" dinamis
+  - Tabel list acuan dengan badge sumber (Manual/Kalkulasi) + sample count
+- /pic_rs/tarif — UploadTarifFaskes 
+  - Download template button + upload form
+  - 7 card stats (total/wajar/perlu_review/tinggi/rendah/ekstrem/no_acuan)
+  - Tabel detail comparison dengan z-score & status badge
+  - Riwayat upload (10 batch terakhir)
+- /admin_kantor/tarif — overview acuan + status per faskes (4 KPI cards + 2 tabel)
+- Sidebar PIC RS: tambah menu "Upload Tarif"
+
+Bug fix selama development:
+1. .gitignore pattern `upload/` tanpa leading slash match semua folder upload/ 
+   → blok src/app/api/tarif/faskes/upload/route.ts → 404 di Vercel
+   → Fix: pakai `/upload/` (root-only)
+2. wpa_tarif_kewajaran_status enum lama tidak punya 'no_acuan' & 'perlu_review'
+   → Drop enum cascade, recreate dengan 6 values
+3. PL/pgSQL function null::numeric cast issue → fix dengan explicit null::numeric
+
+Test end-to-end (via API + Agent Browser):
+1. Admin Cirebon create acuan manual "Kamar Kelas I" Rp 500.000 → OK
+2. Admin Cirebon create acuan calculation "Kamar Kelas II" dari 3 RS (350k/400k/380k)
+   → mean=376667, median=380000, std_dev=25166.11 → OK
+3. PIC RS Juanda upload Excel template (6 item terisi)
+   → 6 item diproses, 2 dibandingkan dengan acuan, 4 no_acuan → OK
+4. Comparison detail:
+   - Kamar Kelas I: 550k vs 500k acuan → +10% → wajar (<=10%)
+   - Kamar Kelas II: 380k vs 376667 acuan → +0.88%, z=0.13 → wajar
+5. Admin view: tabel per faskes + tabel daftar acuan dengan statistik → OK
+6. Multi-tenant verify: Budi CM (Default cabang) tidak bisa lihat acuan Cirebon → OK
+
+Stage Summary:
+- ✅ Skema v2 berfungsi: acuan per kantor cabang, faskes upload auto-compare
+- ✅ Excel template download & upload works (.xlsx via SheetJS)
+- ✅ Status kewajaran: 6 kategori (wajar/perlu_review/tinggi/rendah/ekstrem/no_acuan)
+- ✅ RPC function: z-score + selisih_percent calculation
+- ✅ Multi-tenant: acuan isolated per kantor_cabang
+- ✅ UI: 3 dashboard (case_manager input, pic_rs upload, admin overview)
+- ✅ Vercel production: https://wpa-pks-bpjskaker.vercel.app
