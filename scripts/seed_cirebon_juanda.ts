@@ -39,6 +39,24 @@ const accounts: Account[] = [
     phone: '0231-123456',
     kantor_cabang_kode: 'KC-CIREBON',
   },
+  // Kantor Cabang Cirebon — Case Manager
+  {
+    role: 'case_manager',
+    email: 'cm.cirebon@wpa.local',
+    password: process.env.SEED_CM_CIREBON_PWD || 'CHANGE_ME_IN_ENV',
+    full_name: 'Siti Nurhaliza, SKM',
+    phone: '0231-234567',
+    kantor_cabang_kode: 'KC-CIREBON',
+  },
+  // Kantor Cabang Cirebon — Kepala Bidang Pelayanan
+  {
+    role: 'kepala_bidang',
+    email: 'kabid.cirebon@wpa.local',
+    password: process.env.SEED_KABID_CIREBON_PWD || 'CHANGE_ME_IN_ENV',
+    full_name: 'Drs. H. Suparman, M.Si',
+    phone: '0231-345678',
+    kantor_cabang_kode: 'KC-CIREBON',
+  },
   // RS Juanda Kuningan — PIC RS dan Legal RS
   {
     role: 'pic_rs',
