@@ -1,9 +1,8 @@
 import { getSession } from '@/lib/auth'
 import { supabaseAdmin } from '@/lib/supabase'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Activity } from 'lucide-react'
 
 export default async function AuditPage() {
   const me = await getSession()
@@ -11,10 +10,7 @@ export default async function AuditPage() {
   
   const { data: logs } = await supabaseAdmin
     .from('wpa_audit_logs')
-    .select(`
-      id, action, entity_type, entity_id, before_data, after_data, ip, user_agent, created_at,
-      wpa_users(email, full_name)
-    `)
+    .select('id, action, entity_type, entity_id, before_data, after_data, ip, user_agent, created_at, wpa_users(email, full_name)')
     .order('created_at', { ascending: false })
     .limit(200)
   
@@ -22,7 +18,7 @@ export default async function AuditPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Audit Log</h1>
-        <p className="text-sm text-slate-600">Riwayat semua aktivitas di sistem (200 entri terakhir).</p>
+        <p className="text-sm text-slate-600">Riwayat semua aktivitas sistem (200 entri terakhir, immutable).</p>
       </div>
       <Card>
         <CardContent className="p-0">

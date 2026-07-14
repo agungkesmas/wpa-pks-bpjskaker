@@ -5,15 +5,16 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { 
   LayoutDashboard, FileSignature, Building2, Users, Settings, 
-  LogOut, Menu, X, Bell, MessageCircle, Calendar, BarChart3, 
-  FileText, ListChecks, Wallet, ChevronRight, ShieldCheck
+  LogOut, Menu, X, Bell, Calendar, BarChart3, 
+  FileText, ListChecks, Wallet, ChevronRight, ShieldCheck,
+  Inbox, Plus, Briefcase, FolderOpen
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
-import { ROLE_LABELS } from '@/lib/auth-constants'
+import { ROLE_LABELS, type UserRole } from '@/lib/auth-constants'
 import { BotReceptionist } from '@/components/bot/BotReceptionist'
 
 export interface RoleShellProps {
@@ -21,7 +22,7 @@ export interface RoleShellProps {
     id: string
     email: string
     full_name: string
-    role: 'admin_kantor' | 'case_manager' | 'kepala_bidang' | 'pic_rs' | 'legal_rs'
+    role: UserRole
     kantor_cabang_id: string | null
     faskes_id: string | null
   }
@@ -30,65 +31,66 @@ export interface RoleShellProps {
   children: React.ReactNode
 }
 
-const ROLE_THEMES = {
+const ROLE_THEMES: Record<UserRole, { sidebar: string; accent: string; text: string; active: string }> = {
   super_admin:      { sidebar: 'bg-rose-900',  accent: 'bg-rose-700',  text: 'text-rose-100',  active: 'bg-rose-700 text-white' },
-  admin_kantor:    { sidebar: 'bg-slate-800', accent: 'bg-slate-700', text: 'text-slate-300', active: 'bg-slate-700 text-white' },
-  case_manager:    { sidebar: 'bg-blue-900',  accent: 'bg-blue-700',  text: 'text-blue-100', active: 'bg-blue-700 text-white' },
-  kepala_bidang:   { sidebar: 'bg-teal-900',  accent: 'bg-teal-700',  text: 'text-teal-100', active: 'bg-teal-700 text-white' },
-  pic_rs:          { sidebar: 'bg-orange-800',accent: 'bg-orange-600',text: 'text-orange-100',active: 'bg-orange-600 text-white' },
-  legal_rs:        { sidebar: 'bg-purple-900',accent: 'bg-purple-700',text: 'text-purple-100',active: 'bg-purple-700 text-white' },
-} as const
+  kepala_bidang:    { sidebar: 'bg-teal-900',  accent: 'bg-teal-700',  text: 'text-teal-100',  active: 'bg-teal-700 text-white' },
+  case_manager:     { sidebar: 'bg-blue-900',  accent: 'bg-blue-700',  text: 'text-blue-100',  active: 'bg-blue-700 text-white' },
+  penata_pelayanan: { sidebar: 'bg-cyan-800',  accent: 'bg-cyan-600',  text: 'text-cyan-100',  active: 'bg-cyan-600 text-white' },
+  pic_rs:           { sidebar: 'bg-orange-800',accent: 'bg-orange-600',text: 'text-orange-100',active: 'bg-orange-600 text-white' },
+  legal_rs:         { sidebar: 'bg-purple-900',accent: 'bg-purple-700',text: 'text-purple-100',active: 'bg-purple-700 text-white' },
+}
 
-const ROLE_NAV: Record<string, { href: string; label: string; icon: any }[]> = {
+// ============================================================
+// MENU FINAL PER ROLE (Konsisten, Standar Bahasa Baku)
+// ============================================================
+const ROLE_NAV: Record<UserRole, { href: string; label: string; icon: any }[]> = {
+  // Super Admin (6 menu)
   super_admin: [
     { href: '/super_admin', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/super_admin/kantor', label: 'Kantor Cabang', icon: Building2 },
     { href: '/super_admin/users', label: 'Semua User', icon: Users },
+    { href: '/super_admin/template', label: 'Template Mandatori', icon: FileText },
+    { href: '/super_admin/pengajuan', label: 'Pengajuan', icon: Inbox },
     { href: '/super_admin/audit', label: 'Audit Log', icon: ListChecks },
-    { href: '/super_admin/settings', label: 'Pengaturan', icon: Settings },
   ],
-  admin_kantor: [
-    { href: '/admin_kantor', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/admin_kantor/kantor', label: 'Kantor Cabang Saya', icon: Building2 },
-    { href: '/admin_kantor/users', label: 'Manajemen User', icon: Users },
-    { href: '/admin_kantor/templates', label: 'Template PKS', icon: FileText },
-    { href: '/admin_kantor/tarif', label: 'Bank Tarif', icon: Wallet },
-    { href: '/admin_kantor/audit', label: 'Audit Log', icon: ListChecks },
-    { href: '/admin_kantor/settings', label: 'Pengaturan', icon: Settings },
-  ],
-  case_manager: [
-    { href: '/case_manager', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/case_manager/onboarding', label: 'Onboarding Faskes', icon: Building2 },
-    { href: '/case_manager/pks', label: 'Daftar PKS', icon: FileSignature },
-    { href: '/case_manager/pks/new', label: 'Buat PKS Baru', icon: FileText },
-    { href: '/case_manager/adendum', label: 'Adendum', icon: ListChecks },
-    { href: '/case_manager/dropping', label: 'Dropping Pusat', icon: ShieldCheck },
-    { href: '/case_manager/perpanjangan', label: 'Perpanjangan', icon: Calendar },
-    { href: '/case_manager/tarif', label: 'Komparasi Tarif', icon: BarChart3 },
-  ],
+  // Kepala Bidang (6 menu)
   kepala_bidang: [
     { href: '/kepala_bidang', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/kepala_bidang/onboarding', label: 'Pipeline Onboarding', icon: Building2 },
-    { href: '/kepala_bidang/pks', label: 'Daftar PKS', icon: FileSignature },
-    { href: '/kepala_bidang/dropping', label: 'Dropping Pusat', icon: ShieldCheck },
-    { href: '/kepala_bidang/approval', label: 'Approval Queue', icon: ListChecks },
-    { href: '/kepala_bidang/tarif', label: 'Analisis Tarif', icon: BarChart3 },
-    { href: '/kepala_bidang/reminder', label: 'Reminder PKS', icon: Calendar },
+    { href: '/kepala_bidang/approval', label: 'Approval', icon: ShieldCheck },
+    { href: '/kepala_bidang/dokumen', label: 'Dokumen Legal', icon: FileSignature },
+    { href: '/kepala_bidang/tugas', label: 'Tugas Cabang', icon: Briefcase },
+    { href: '/kepala_bidang/pengajuan', label: 'Pengajuan', icon: Inbox },
+    { href: '/kepala_bidang/laporan', label: 'Laporan', icon: BarChart3 },
   ],
+  // Case Manager (5 menu)
+  case_manager: [
+    { href: '/case_manager', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/case_manager/tugas', label: 'Tugas Saya', icon: Briefcase },
+    { href: '/case_manager/tugas-cabang', label: 'Tugas Cabang', icon: ListChecks },
+    { href: '/case_manager/faskes', label: 'Faskes Mitra', icon: Building2 },
+    { href: '/case_manager/tarif', label: 'Bank Tarif', icon: Wallet },
+  ],
+  // Penata Pelayanan (4 menu)
+  penata_pelayanan: [
+    { href: '/penata_pelayanan', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/penata_pelayanan/tugas', label: 'Tugas Saya', icon: Briefcase },
+    { href: '/penata_pelayanan/tugas-cabang', label: 'Tugas Cabang', icon: ListChecks },
+    { href: '/penata_pelayanan/faskes', label: 'Faskes Mitra', icon: Building2 },
+  ],
+  // PIC RS (5 menu) — tambah "Ajukan PKS Baru"
   pic_rs: [
     { href: '/pic_rs', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/pic_rs/pks', label: 'PKS Saya', icon: FileSignature },
-    { href: '/pic_rs/tarif', label: 'Upload Tarif', icon: Wallet },
-    { href: '/pic_rs/dropping', label: 'Dropping Pusat', icon: ShieldCheck },
-    { href: '/pic_rs/perpanjangan', label: 'Ajukan Perpanjangan', icon: Calendar },
-    { href: '/pic_rs/adendum', label: 'Ajukan Adendum Harga', icon: FileText },
-    { href: '/pic_rs/dokumen', label: 'Dokumen Kredensial', icon: FileText },
+    { href: '/pic_rs/ajukan-baru', label: 'Ajukan PKS Baru', icon: Plus },
+    { href: '/pic_rs/pengajuan', label: 'Pengajuan Saya', icon: Inbox },
+    { href: '/pic_rs/dokumen', label: 'Dokumen Saya', icon: FileSignature },
+    { href: '/pic_rs/tarif', label: 'Bank Tarif', icon: Wallet },
   ],
+  // Legal RS (4 menu)
   legal_rs: [
     { href: '/legal_rs', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/legal_rs/review', label: 'PKS Mfg Review', icon: FileSignature },
-    { href: '/legal_rs/dropping', label: 'Dropping Pusat', icon: ShieldCheck },
-    { href: '/legal_rs/signed', label: 'Sudah Ditandatangani', icon: ListChecks },
+    { href: '/legal_rs/review', label: 'Review', icon: FileSignature },
+    { href: '/legal_rs/dokumen', label: 'Dokumen Legal', icon: FolderOpen },
+    { href: '/legal_rs/audit', label: 'Audit Log', icon: ListChecks },
   ],
 }
 
@@ -112,15 +114,15 @@ export function RoleShell({ user, kantor_nama, notifications = [], children }: R
         <div className="flex items-center gap-2 text-white">
           <ShieldCheck className="w-6 h-6" />
           <div>
-            <div className="font-bold text-sm">WPA</div>
-            <div className="text-[10px] opacity-75">PKS BPJS Ketenagakerjaan</div>
+            <div className="font-bold text-sm">Manajemen PLKK</div>
+            <div className="text-[10px] opacity-75">BPJS Ketenagakerjaan</div>
           </div>
         </div>
       </div>
       <div className="p-3 border-b border-white/10">
-        <div className="text-[10px] uppercase tracking-wider opacity-60 text-white">Kantor Cabang</div>
+        <div className="text-[10px] uppercase tracking-wider opacity-60 text-white">Konteks</div>
         <div className="text-xs font-semibold text-white truncate">
-          {kantor_nama || 'Default'}
+          {kantor_nama || 'Semua Kantor Cabang'}
         </div>
       </div>
       <nav className="flex-1 overflow-y-auto py-2">
@@ -163,23 +165,21 @@ export function RoleShell({ user, kantor_nama, notifications = [], children }: R
             <LogOut className="w-4 h-4" />
           </Button>
         </div>
+        <Link href="/profile" className="block text-center text-[10px] text-white/70 hover:text-white border-t border-white/10 pt-2 mt-1">
+          Profil Saya
+        </Link>
       </div>
     </div>
   )
 
   return (
     <div className="flex h-screen bg-slate-50">
-      {/* Desktop sidebar */}
       <aside className="hidden lg:block flex-shrink-0">{sidebar}</aside>
 
-      {/* Mobile sidebar */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        <SheetContent side="left" className="p-0 w-64">
-          {sidebar}
-        </SheetContent>
+        <SheetContent side="left" className="p-0 w-64">{sidebar}</SheetContent>
       </Sheet>
 
-      {/* Main */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="bg-white border-b border-slate-200 px-4 lg:px-6 py-3 flex items-center gap-3 flex-shrink-0">
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
@@ -191,7 +191,7 @@ export function RoleShell({ user, kantor_nama, notifications = [], children }: R
           </Sheet>
           <div className="flex-1">
             <h2 className="text-base lg:text-lg font-semibold text-slate-900">
-              {nav.find(n => pathname === n.href || (n.href !== `/${user.role}` && pathname.startsWith(n.href)))?.label || 'WPA'}
+              {nav.find(n => pathname === n.href || (n.href !== `/${user.role}` && pathname.startsWith(n.href)))?.label || 'Manajemen PLKK'}
             </h2>
           </div>
           <div className="relative">
@@ -214,18 +214,7 @@ export function RoleShell({ user, kantor_nama, notifications = [], children }: R
         </main>
       </div>
 
-      {/* Bot Resepsionis — widget pojok kanan */}
       <BotReceptionist user={user} />
-      
-      {/* Profile link button (top-right floating) */}
-      <Link href="/profile" className="hidden lg:flex fixed bottom-4 left-4 z-40 bg-white border border-slate-200 rounded-full shadow-sm hover:shadow-md transition-all p-2 items-center gap-2 text-xs">
-        <Avatar className="w-6 h-6">
-          <AvatarFallback className={cn(theme.accent, 'text-white text-[10px] font-semibold')}>
-            {user.full_name.split(' ').map(w => w.charAt(0)).slice(0,2).join('').toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
-        <span className="font-medium pr-2">Profil Saya</span>
-      </Link>
     </div>
   )
 }
