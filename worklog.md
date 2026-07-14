@@ -362,3 +362,41 @@ Stage Summary:
 - ✅ Audit log records all auth activities
 - ✅ TIDAK ADA proyek aktif yang diganggu (magang-cerdas-pwa, mushola-nur-hidayah, dll tetap utuh)
 - Screenshots saved: /home/z/my-project/download/wpa_login_page.png, wpa_admin_dashboard.png
+
+---
+Task ID: SEED-001
+Agent: main
+Task: Seed kantor cabang Cirebon + RS Juanda Kuningan + akun PIC RS & Legal RS
+
+Work Log:
+- Buat script /scripts/seed_cirebon_juanda.ts (pakai bcryptjs 12 rounds)
+- Insert wpa_kantor_cabang KC-CIREBON (BPJS Ketenagakerjaan Cabang Cirebon)
+- Insert wpa_faskes RS Juanda Kuningan (jenis=RS, status=aktif, kantor_cabang_id=Cirebon)
+- Insert 3 users: admin.cirebon (admin_kantor), pic.rsjuanda (pic_rs), legal.rsjuanda (legal_rs)
+- Set faskes_id untuk PIC RS & Legal RS ke RS Juanda
+- Set kantor_cabang_id semua ke Cirebon (tenant)
+- Verifikasi login via API: ketiganya sukses
+- Verifikasi visual via Agent Browser:
+  • Admin Cirebon: dashboard menampilkan "5 Total User, 2 Kantor Cabang"
+  • PIC RS Juanda: sidebar menampilkan "RS: RS Juanda Kuningan"
+  • Daftar user lengkap di /admin_kantor/users (5 user dengan kantor/faskes terisi)
+
+Bug fix selama verifikasi:
+- Tabel user awalnya kosong karena PostgREST tidak kenal FK join
+- Fix: tambah FK eksplisit untuk wpa_users.faskes_id (sebelumnya tidak ada di schema awal)
+- Drop FK dobel yang di-add manual (Supabase auto-create sudah ada di tabel lain)
+- Total FK: 53 (clean, no duplicates)
+- Reload PostgREST schema cache via `notify pgrst, 'reload schema'`
+
+Stage Summary:
+- ✅ Login semua 3 akun baru: WORKS
+- ✅ Multi-tenant: WORKS (admin Cirebon hanya lihat konteks Cirebon, sidebar benar)
+- ✅ Faskes association: WORKS (PIC RS sidebar menampilkan "RS: RS Juanda Kuningan")
+- ✅ User management table: WORKS (5 user dengan kantor/faskes terisi via PostgREST join)
+- ✅ Vercel redeploy: SUCCESS (deploy ID dpl_EY23ZeJG5XTbMuxKy1JxCZNTkjAj)
+- ✅ GitHub push: SUCCESS (clean history, no secrets committed)
+
+Akun yang dibuat (semua password pakai env var, bukan hardcoded):
+- admin.cirebon@wpa.local / SEED_ADMIN_CIREBON_PWD env var → admin_kantor Cabang Cirebon
+- pic.rsjuanda@wpa.local / SEED_PIC_RSJUANDA_PWD env var → PIC RS Juanda Kuningan
+- legal.rsjuanda@wpa.local / SEED_LEGAL_RSJUANDA_PWD env var → Legal RS Juanda Kuningan
