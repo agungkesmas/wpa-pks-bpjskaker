@@ -19,12 +19,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'mutasi_id wajib' }, { status: 400 })
     }
     
-    // Get mutasi detail
+    // Get mutasi detail (tanpa join wpa_users karena FK ambigu)
     const { data: mutasi, error } = await supabaseAdmin
       .from('wpa_user_mutasi')
       .select(`
         *,
-        wpa_users!inner(email, full_name, role, nip, phone),
         from_kantor:wpa_kantor_cabang!wpa_user_mutasi_from_kantor_cabang_id_fkey(nama, kode, alamat, kota),
         to_kantor:wpa_kantor_cabang!wpa_user_mutasi_to_kantor_cabang_id_fkey(nama, kode, alamat, kota)
       `)
@@ -34,6 +33,16 @@ export async function GET(req: NextRequest) {
     if (error || !mutasi) {
       return NextResponse.json({ error: 'Mutasi tidak ditemukan' }, { status: 404 })
     }
+    
+    // Fetch user info separately
+    const { data: userData } = await supabaseAdmin
+      .from('wpa_users')
+      .select('email, full_name, role, nip, phone')
+      .eq('id', mutasi.user_id)
+      .single()
+    
+    // Inject user data
+    mutasi.wpa_users = userData
     
     // admin_kantor hanya bisa print mutasi yang melibatkan cabangnya
     if (me.role === 'admin_kantor' && me.kantor_cabang_id) {

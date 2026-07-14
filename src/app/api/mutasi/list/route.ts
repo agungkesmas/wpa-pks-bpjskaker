@@ -20,7 +20,6 @@ export async function GET(req: NextRequest) {
       .from('wpa_user_mutasi')
       .select(`
         *,
-        wpa_users!inner(email, full_name, role, nip),
         from_kantor:wpa_kantor_cabang!wpa_user_mutasi_from_kantor_cabang_id_fkey(nama, kode),
         to_kantor:wpa_kantor_cabang!wpa_user_mutasi_to_kantor_cabang_id_fkey(nama, kode)
       `)
@@ -37,7 +36,26 @@ export async function GET(req: NextRequest) {
     const { data, error } = await query
     if (error) throw error
     
-    return NextResponse.json({ data: data || [] })
+    // Fetch user info separately (avoid PostgREST ambiguous FK)
+    const userIds = (data || []).map(m => m.user_id).filter(Boolean)
+    let userMap: Record<string, any> = {}
+    if (userIds.length > 0) {
+      const { data: users } = await supabaseAdmin
+        .from('wpa_users')
+        .select('id, email, full_name, role, nip')
+        .in('id', [...new Set(userIds)])
+      userMap = (users || []).reduce((acc, u) => {
+        acc[u.id] = u
+        return acc
+      }, {} as Record<string, any>)
+    }
+    
+    const enriched = (data || []).map(m => ({
+      ...m,
+      user: userMap[m.user_id] || null,
+    }))
+    
+    return NextResponse.json({ data: enriched })
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 })
   }

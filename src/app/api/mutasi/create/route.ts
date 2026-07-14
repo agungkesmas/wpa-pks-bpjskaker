@@ -5,8 +5,8 @@ import { isAdmin } from '@/lib/auth-constants'
 import { z } from 'zod'
 
 const schema = z.object({
-  user_id: z.string().uuid(),
-  to_kantor_cabang_id: z.string().uuid(),
+  user_id: z.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
+  to_kantor_cabang_id: z.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
   tanggal_sk: z.string(),
   tanggal_efektif: z.string(),
   nomor_sk: z.string().optional(),
