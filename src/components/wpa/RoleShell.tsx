@@ -31,6 +31,7 @@ export interface RoleShellProps {
 }
 
 const ROLE_THEMES = {
+  super_admin:      { sidebar: 'bg-rose-900',  accent: 'bg-rose-700',  text: 'text-rose-100',  active: 'bg-rose-700 text-white' },
   admin_kantor:    { sidebar: 'bg-slate-800', accent: 'bg-slate-700', text: 'text-slate-300', active: 'bg-slate-700 text-white' },
   case_manager:    { sidebar: 'bg-blue-900',  accent: 'bg-blue-700',  text: 'text-blue-100', active: 'bg-blue-700 text-white' },
   kepala_bidang:   { sidebar: 'bg-teal-900',  accent: 'bg-teal-700',  text: 'text-teal-100', active: 'bg-teal-700 text-white' },
@@ -39,10 +40,17 @@ const ROLE_THEMES = {
 } as const
 
 const ROLE_NAV: Record<string, { href: string; label: string; icon: any }[]> = {
+  super_admin: [
+    { href: '/super_admin', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/super_admin/kantor', label: 'Kantor Cabang', icon: Building2 },
+    { href: '/super_admin/users', label: 'Semua User', icon: Users },
+    { href: '/super_admin/audit', label: 'Audit Log', icon: ListChecks },
+    { href: '/super_admin/settings', label: 'Pengaturan', icon: Settings },
+  ],
   admin_kantor: [
     { href: '/admin_kantor', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/admin_kantor/kantor', label: 'Kantor Cabang Saya', icon: Building2 },
     { href: '/admin_kantor/users', label: 'Manajemen User', icon: Users },
-    { href: '/admin_kantor/kantor', label: 'Kantor Cabang', icon: Building2 },
     { href: '/admin_kantor/templates', label: 'Template PKS', icon: FileText },
     { href: '/admin_kantor/tarif', label: 'Bank Tarif', icon: Wallet },
     { href: '/admin_kantor/audit', label: 'Audit Log', icon: ListChecks },
@@ -208,6 +216,16 @@ export function RoleShell({ user, kantor_nama, notifications = [], children }: R
 
       {/* Bot Resepsionis — widget pojok kanan */}
       <BotReceptionist user={user} />
+      
+      {/* Profile link button (top-right floating) */}
+      <Link href="/profile" className="hidden lg:flex fixed bottom-4 left-4 z-40 bg-white border border-slate-200 rounded-full shadow-sm hover:shadow-md transition-all p-2 items-center gap-2 text-xs">
+        <Avatar className="w-6 h-6">
+          <AvatarFallback className={cn(theme.accent, 'text-white text-[10px] font-semibold')}>
+            {user.full_name.split(' ').map(w => w.charAt(0)).slice(0,2).join('').toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+        <span className="font-medium pr-2">Profil Saya</span>
+      </Link>
     </div>
   )
 }

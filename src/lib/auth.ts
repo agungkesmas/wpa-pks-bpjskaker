@@ -68,7 +68,7 @@ export async function getSession(): Promise<AuthUser | null> {
   // Verify user is still active in DB
   const { data, error } = await supabaseAdmin
     .from('wpa_users')
-    .select('id, email, full_name, role, kantor_cabang_id, faskes_id, phone, is_active, last_login_at')
+    .select('id, email, full_name, role, kantor_cabang_id, faskes_id, phone, nip, profile_photo_url, must_change_password, is_active, last_login_at')
     .eq('id', user.id)
     .single()
   
@@ -82,6 +82,9 @@ export async function getSession(): Promise<AuthUser | null> {
     kantor_cabang_id: data.kantor_cabang_id,
     faskes_id: data.faskes_id,
     phone: data.phone,
+    nip: data.nip || null,
+    profile_photo_url: data.profile_photo_url || null,
+    must_change_password: data.must_change_password || false,
   }
 }
 
@@ -126,6 +129,9 @@ export async function authenticateUser(email: string, password: string): Promise
     kantor_cabang_id: data.kantor_cabang_id,
     faskes_id: data.faskes_id,
     phone: data.phone,
+    nip: data.nip || null,
+    profile_photo_url: data.profile_photo_url || null,
+    must_change_password: data.must_change_password || false,
   }
 }
 

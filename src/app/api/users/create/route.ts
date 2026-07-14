@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { hashPassword, getSession, logAudit } from '@/lib/auth'
+import { isAdmin } from '@/lib/auth-constants'
 import { z } from 'zod'
 
 const schema = z.object({
   email: z.string().email(),
   full_name: z.string().min(2),
-  role: z.enum(['admin_kantor', 'case_manager', 'kepala_bidang', 'pic_rs', 'legal_rs']),
+  role: z.enum(['super_admin', 'admin_kantor', 'case_manager', 'kepala_bidang', 'pic_rs', 'legal_rs']),
   phone: z.string().optional(),
+  nip: z.string().optional(),
   password: z.string().min(8),
   kantor_cabang_id: z.string().optional(),
   faskes_id: z.string().optional(),
@@ -16,7 +18,7 @@ const schema = z.object({
 export async function POST(req: NextRequest) {
   try {
     const me = await getSession()
-    if (!me || me.role !== 'admin_kantor') {
+    if (!me || !isAdmin(me.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
     
@@ -37,7 +39,11 @@ export async function POST(req: NextRequest) {
       full_name: data.full_name,
       role: data.role,
       phone: data.phone || null,
+      nip: data.nip || null,
       password_hash: hashPassword(data.password),
+      temp_password: data.password,  // untuk Slip A4 (akan di-clear setelah first login)
+      temp_password_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      must_change_password: true,
       is_active: true,
       kantor_cabang_id: data.kantor_cabang_id || null,
       faskes_id: data.faskes_id || null,

@@ -1,5 +1,10 @@
-import { Placeholder } from '@/components/wpa/Placeholder'
+import { redirect } from 'next/navigation'
+import KantorListPage from '@/app/super_admin/kantor/page'
+import { getSession } from '@/lib/auth'
 
-export default function Page() {
-  return <Placeholder title="Manajemen Kantor Cabang" description="Kelola kantor cabang untuk multi-tenant." />
+export default async function AdminKantorPage() {
+  const me = await getSession()
+  if (!me) return null
+  // Reuse the same component
+  return <KantorListPage />
 }

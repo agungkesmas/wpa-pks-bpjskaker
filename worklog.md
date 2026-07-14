@@ -470,3 +470,56 @@ Stage Summary:
 - ✅ Multi-tenant: acuan isolated per kantor_cabang
 - ✅ UI: 3 dashboard (case_manager input, pic_rs upload, admin overview)
 - ✅ Vercel production: https://wpa-pks-bpjskaker.vercel.app
+
+---
+Task ID: DESIGN-DECISIONS
+Agent: main
+Task: Catat keputusan desain dari jawaban user untuk Prioritas 1
+
+Work Log:
+- User jawab 5 pertanyaan klarifikasi. Semua tercatat di bawah.
+
+Stage Summary (Keputusan Final):
+
+1. HIERARKI ADMIN = A (Super Admin + Admin Cabang)
+   - Super Admin: user Anda sendiri (sementara), kelola SEMUA cabang
+   - Admin Cabang: kelola hanya cabangnya
+   - Tambah role `super_admin` ke enum wpa_user_role
+
+2. PRINT = C (dua-duanya: ID Card + Slip A4)
+   - ID Card: landscape A6 (~105x74mm), untuk print plastik fisik
+     * Logo BPJS, foto, nama, role, kantor, NIP
+   - Slip A4: portrait A4, untuk onboarding awal (WhatsApp/print saat buat akun)
+     * Email, password sementara, instruksi login, QR code
+   - Tambah: Kartu Mutasi A4 (untuk skenario mutasi antar cabang)
+     * Info: dari cabang X ke Y, tanggal efektif, alasan, SK
+   - Pakai CSS print murni (window.print) untuk efisiensi
+   - Skenario: PKS baru/perpanjangan → slip A4 dengan catatan status PKS
+
+3. MUTASI = C (instan + scheduled, admin pilih)
+   - Tabel wpa_user_mutasi: from_kantor, to_kantor, tanggal_sk, tanggal_efektif, nomor_sk, file_sk, alasan, status
+   - Status: pending (menunggu tanggal efektif), active (sudah diproses), cancelled
+   - Cron job harian: apply mutasi yang tanggal_efektif <= today
+
+4. SELF-SERVICE PROFILE = C (password + HP + foto + email dengan verifikasi)
+   - Tambah kolom: profile_photo_url, email_verified_at, nip
+   - Email change: user input password lama + email baru → langsung update (audit log)
+   - Alasan: no email infrastructure (user bilang "cukup in-app + WhatsApp manual")
+   - Password change: input password lama + password baru + konfirmasi
+   - Foto: upload ke Supabase Storage bucket wpa-profile-photos
+   - Self-service tidak boleh: ubah nama lengkap, role, kantor (admin only)
+   - Self-service tidak boleh: deaktivasi diri sendiri (anti-fraud)
+
+5. FASKES untuk PIC RS = B (1 PIC bisa multi-faskes + PKS Payung)
+   - Junction table wpa_user_faskes (user_id, faskes_id, is_primary)
+   - Migrate existing wpa_users.faskes_id → wpa_user_faskes (is_primary=true)
+   - Konsep PKS Payung: 1 grup RS (mis. "RS Juanda Group") bisa menerbitkan PKS payung
+     * Tabel baru wpa_faskes_group (kode, nama, jenis, alamat, NPWP, PJ)
+     * wpa_faskes tambah group_id (FK) + tipe (A/B/C/D/Umum)
+     * Tarif berbeda per tipe faskes (sudah tertangani di wpa_tarif_acuan per kategori)
+   - wpa_pks tambah: is_payung (bool), parent_pks_payung_id (self-ref)
+   - UI: PIC RS punya dropdown switch faskes di header (kalau multi)
+
+=== PRIORITAS 1: KANTOR CABANG + USER MANAGEMENT TERINTEGRASI ===
+Setelah keputusan ini, saya mulai eksekusi Prioritas 1.
+Estimasi: 12 todo items, 1 sesi panjang atau 2 sesi normal.
