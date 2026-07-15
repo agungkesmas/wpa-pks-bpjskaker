@@ -31,6 +31,11 @@ const DraftingPKSView = dynamic(
   }
 )
 
+// Lazy load TarifScanResult
+const TarifScanResult = dynamic(
+  () => import('@/components/wpa/TarifScanResult').then(m => ({ default: m.TarifScanResult })),
+  { ssr: false, loading: () => <div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-slate-400" /></div> }
+)
 // Lazy load CM Review + Takeover components
 const CMReviewDraft = dynamic(
   () => import('@/components/wpa/CMReviewDraft').then(m => ({ default: m.CMReviewDraft })),
@@ -229,6 +234,15 @@ export function PipelineDetailView({ role, currentUserId }: Props) {
         </div>
       )}
       
+      {/* Tarif Scan — tampilkan saat tahap ditinjau_kajian_tarif (CM handler) */}
+      {pipeline && pipeline.current_tahap === 'ditinjau_kajian_tarif' && (isHandler || role === 'super_admin') && (role === 'case_manager' || role === 'kepala_bidang' || role === 'super_admin') && (
+        <TarifScanResult
+          pipelineId={pipeline.id}
+          onApprove={() => handleAction('advance')}
+          onReturn={() => setActionDialog({ type: 'return', tahap: pipeline.current_tahap })}
+        />
+      )}
+
       {/* Drafting PKS — conditional rendering based on role + draft status */}
       {pipeline && (pipeline.current_tahap === 'drafting_pks' || pipeline.current_tahap === 'drafting_adendum') && (
         isHandler || role === 'super_admin' ? (

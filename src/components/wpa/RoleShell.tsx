@@ -59,7 +59,7 @@ const ROLE_NAV: Record<UserRole, { href: string; label: string; icon: any }[]> =
     { href: '/super_admin/pengajuan', label: 'Pengajuan', icon: Inbox },
     { href: '/super_admin/audit', label: 'Audit Log', icon: ListChecks },
   ],
-  // Kepala Bidang (6 menu — tambah Dropping Pusat)
+  // Kepala Bidang (7 menu — tambah Settings)
   kepala_bidang: [
     { href: '/kepala_bidang', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/kepala_bidang/approval', label: 'Approval', icon: ShieldCheck },
@@ -67,8 +67,9 @@ const ROLE_NAV: Record<UserRole, { href: string; label: string; icon: any }[]> =
     { href: '/kepala_bidang/dokumen', label: 'Dokumen Legal', icon: FileSignature },
     { href: '/kepala_bidang/tugas', label: 'Tugas Cabang', icon: Briefcase },
     { href: '/kepala_bidang/laporan', label: 'Laporan', icon: BarChart3 },
+    { href: '/kepala_bidang/settings', label: 'Settings', icon: Settings },
   ],
-  // Case Manager (7 menu — tambah Adendum Masal)
+  // Case Manager (9 menu — tambah Settings)
   case_manager: [
     { href: '/case_manager', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/case_manager/tugas', label: 'Tugas Saya', icon: Briefcase },
@@ -78,6 +79,7 @@ const ROLE_NAV: Record<UserRole, { href: string; label: string; icon: any }[]> =
     { href: '/case_manager/faskes', label: 'Faskes Mitra', icon: Building2 },
     { href: '/case_manager/dokumen-operasional', label: 'Dokumen Operasional', icon: FileText },
     { href: '/case_manager/tarif', label: 'Bank Tarif', icon: Wallet },
+    { href: '/case_manager/settings', label: 'Settings', icon: Settings },
   ],
   // Penata Pelayanan (4 menu — tambah Dokumen Operasional)
   penata_pelayanan: [
