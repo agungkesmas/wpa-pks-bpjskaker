@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { DraftingPKSView } from '@/components/wpa/DraftingPKSView'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -210,6 +211,11 @@ export function PipelineDetailView({ role, currentUserId }: Props) {
             </Button>
           )}
         </div>
+      )}
+      
+      {/* Drafting PKS — tampilkan saat tahap drafting_pks atau drafting_adendum */}
+      {pipeline && (pipeline.current_tahap === 'drafting_pks' || pipeline.current_tahap === 'drafting_adendum') && (isHandler || role === 'super_admin') && (
+        <DraftingPKSView pipelineId={pipeline.id} onGenerated={() => {}} />
       )}
       
       {/* Tracking tahap */}
