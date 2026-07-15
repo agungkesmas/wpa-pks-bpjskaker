@@ -683,3 +683,80 @@ Daftar Akun Lengkap (6 role):
 - pp.cirebon@wpa.local / PPCirebon2026!# → penata_pelayanan (Cirebon)
 - pic.rsjuanda@wpa.local / PicRSJ2026!# → pic_rs (RS Juanda Kuningan)
 - legal.rsjuanda@wpa.local / LegalRSJ2026!# → legal_rs (RS Juanda Kuningan)
+
+---
+Task ID: FASE-2-PIC-RS-PENGAJUAN
+Agent: main
+Task: Fase 2 — PIC RS Pengajuan + Pipeline Tracking + Access Control Buka-Tutup PP
+
+Work Log:
+- Schema: 4 tabel baru + 4 kolom baru di wpa_pipeline
+  • wpa_pipeline_access_control (log buka/tutup akses PP)
+  • wpa_pengajuan_dokumen (file upload dari PIC RS)
+  • wpa_kredensialing_checklist (checklist tahap kredensialing)
+  • wpa_pipeline_chat (chat/negosiasi CM ↔ PIC RS)
+  • wpa_pipeline: + takeover_enabled, takeover_enabled_by, takeover_enabled_at, takeover_reason
+- API endpoints:
+  • POST /api/pengajuan-baru/create (PIC RS submit form → auto-create faskes + pipeline + notifikasi)
+  • GET /api/pipeline/list (filter by role: handler_only, cabang_only, initiated_by_me, review_for_me)
+  • GET /api/pipeline/detail/[id] (detail + logs + tahap_config + documents + access_logs)
+  • POST /api/pipeline/takeover-toggle (CM/Kabid buka/tutup akses PP untuk tugas tertentu)
+- UI per role:
+  • PIC RS /ajukan-baru: form 4 section (Data Faskes, PJ, Bank, Catatan)
+  • PIC RS /pengajuan: list pengajuan saya + tracking 8 tahap real-time + timeline aktivitas
+  • CM /tugas: tugas saya (yang sedang saya pegang)
+  • CM /tugas-cabang: semua tugas cabang + tombol Buka PP / Tutup PP per tugas
+  • PP /tugas: tugas saya (yang sudah di-ambil alih)
+  • PP /tugas-cabang: hanya tugas yang takeover_enabled=true (CM/Kabid buka)
+  • Kabid /tugas: oversight semua tugas + bisa toggle PP
+
+Logika Buka-Tutup Access Control (anti-tabrakan):
+- Default: takeover_enabled=false → PP TIDAK bisa lihat tugas di Tugas Cabang
+- CM/Kabid klik "Buka PP" → prompt alasan → takeover_enabled=true
+- PP otomatis dapat notifikasi "Tugas Tersedia untuk Diambil Alih"
+- PP bisa lihat tugas di Tugas Cabang + klik "Ambil Alih"
+- CM/Kabid klik "Tutup PP" → takeover_enabled=false → PP tidak bisa lihat lagi
+- Semua aksi dicatat di wpa_pipeline_access_control (siapa, kapan, kenapa)
+
+Test e2e (via API + Agent Browser):
+1. ✓ PIC RS baru (pic.newrs@wpa.local) submit pengajuan RS Sehat Sentosa
+   → faskes created (status: pengajuan) + pipeline created (current_tahap: diajukan)
+   → PIC RS auto-linked ke faskes baru
+   → Notifikasi ke CM & Kabid di kantor tujuan
+2. ✓ CM (Budi) lihat pipeline di Tugas Cabang (takeover_enabled=false default)
+3. ✓ CM buka akses PP (reason: "CM cuti hari ini")
+   → takeover_enabled=true
+   → PP dapat notifikasi
+4. ✓ PP (pp.default) lihat pipeline di Tugas Cabang + tombol "Ambil Alih"
+5. ✓ CM tutup akses PP → PP tidak bisa lihat lagi
+6. ✓ PIC RS lihat tracking 8 tahap:
+   - Tahap 1 (Pengajuan): Sedang Berjalan
+   - Tahap 2-8: Menunggu
+   - Timeline aktivitas: 1 log (PIC RS submit)
+   - Access control logs: 2 entries (enabled_takeover, disabled_takeover)
+
+UI Test via Agent Browser:
+- PIC RS /pengajuan: tracking 8 tahap with status badges (Selesai/Sedang Berjalan/Menunggu)
+- CM /tugas-cabang: card tugas dengan tombol "Buka PP" + prompt alasan
+- Setelah buka: badge "PP Aktif" + tombol berubah jadi "Tutup PP"
+- PP /tugas-cabang: hanya tugas yang dibuka, dengan tombol "Ambil Alih"
+
+Bug fix selama dev:
+- psycopg2 module not found (install --break-system-packages)
+- bcrypt module not found (install --break-system-packages)
+- TypeScript readonly issue dengan ReadonlyArray (string interpolation di template literal)
+
+Stage Summary:
+- ✅ Fase 2 selesai: PIC RS bisa ajukan PKS baru + tracking real-time
+- ✅ Logika buka-tutup PP bekerja: anti-tabrakan, kontrol ketat
+- ✅ 8 tahap pipeline tracking visible untuk PIC RS, CM, PP, Kabid, Legal RS
+- ✅ Notifikasi otomatis: PIC RS submit → CM & Kabid dapat notif; CM buka PP → PP dapat notif
+- ✅ Audit trail lengkap: pipeline_log + access_control + audit_logs
+- ⏳ Fase 3: Template Mandatori (Super Admin upload + hash per bab)
+- ⏳ Fase 4: Pipeline Universal & Tracking (state machine + transisi tahap)
+- ⏳ Fase 5: Drafting PKS & Adendum
+- ⏳ Fase 6: Tracking, Reminder, KPI
+
+Sample akun tambahan:
+- pic.newrs@wpa.local / PicNewRS2026!# → pic_rs (temporary, untuk test pengajuan baru)
+- pp.default@wpa.local / PPDefault2026!# → penata_pelayanan (Default cabang)
