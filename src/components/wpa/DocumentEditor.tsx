@@ -6,7 +6,6 @@ import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
 import TextAlign from '@tiptap/extension-text-align'
 import Highlight from '@tiptap/extension-highlight'
-import Table from '@tiptap/extension-table'
 import { Button } from '@/components/ui/button'
 import { Loader2, Printer, Save, FileText, Bold, Italic, Underline as UnderlineIcon, 
   AlignLeft, AlignCenter, AlignRight, List, ListOrdered, Highlighter, Minus } from 'lucide-react'
@@ -30,7 +29,6 @@ export function DocumentEditor({ dokumenId, onClose }: Props) {
       Underline,
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       Highlight.configure({ multicolor: false }),
-      Table.configure({ resizable: false }),
     ],
     content: '<p>Memuat dokumen...</p>',
     editorProps: {
