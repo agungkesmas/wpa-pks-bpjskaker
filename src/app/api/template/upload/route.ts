@@ -110,10 +110,14 @@ export async function POST(req: NextRequest) {
       is_active: true,
     }))
     if (babRows.length > 0) {
-      const { error: babInsertErr } = await supabaseAdmin.from('wpa_template_bab').insert(babRows)
-      if (babInsertErr) {
-        console.error('Bab insert error:', babInsertErr)
-        // Continue anyway, placeholder sudah ada
+      // Insert satu per satu untuk handle error dengan baik
+      for (const babRow of babRows) {
+        const { error: babErr } = await supabaseAdmin
+          .from('wpa_template_bab')
+          .insert(babRow)
+        if (babErr) {
+          console.error(`Bab insert error for ${babRow.bab_id}:`, babErr.message)
+        }
       }
     }
     
