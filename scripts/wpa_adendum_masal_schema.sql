@@ -65,7 +65,7 @@ create index if not exists idx_wpa_placeholder_pipeline on wpa_pipeline_placehol
 insert into wpa_pipeline_tahap_config (jenis_pipeline, tahap, urutan, is_wajib, default_sla_days, handler_role, description) values
   ('adendum_masal', 'diajukan', 1, true, 1, 'pic_rs', 'PIC RS submit form placeholder adendum masal'),
   ('adendum_masal', 'ditinjau', 2, true, 3, 'case_manager', 'CM group review: ceklis multi, setuju/tolak bareng'),
-  ('adendum_masal', 'completed', 3, true, 0, 'system', 'Auto-complete: generate PDF siap print TTD basah')
+  ('adendum_masal', 'completed', 3, true, 0, 'case_manager', 'Auto-complete: generate PDF siap print TTD basah (CM trigger via group-action)')
 on conflict (jenis_pipeline, tahap) do update set
   urutan = excluded.urutan,
   is_wajib = excluded.is_wajib,

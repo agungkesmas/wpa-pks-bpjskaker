@@ -185,7 +185,7 @@ export const TAHAP_CONFIG_SEED: Array<{
   // ADENDUM MASAL (3 tahap — PIC RS submit → CM group review → auto generate PDF)
   { jenis_pipeline: 'adendum_masal', tahap: 'diajukan', urutan: 1, is_wajib: true, default_sla_days: 1, handler_role: 'pic_rs', description: 'PIC RS submit form placeholder adendum masal' },
   { jenis_pipeline: 'adendum_masal', tahap: 'ditinjau', urutan: 2, is_wajib: true, default_sla_days: 3, handler_role: 'case_manager', description: 'CM group review: ceklis multi, setuju/tolak bareng' },
-  { jenis_pipeline: 'adendum_masal', tahap: 'completed', urutan: 3, is_wajib: true, default_sla_days: 0, handler_role: 'case_manager', description: 'Auto-complete: generate PDF siap print TTD basah' },
+  { jenis_pipeline: 'adendum_masal', tahap: 'completed', urutan: 3, is_wajib: true, default_sla_days: 0, handler_role: 'case_manager', description: 'Auto-complete: generate PDF siap print TTD basah (CM trigger via group-action)' },
 
   // PERUBAHAN DATA (6 tahap — skip kredensialing_ulang & tinjauan_tarif)
   { jenis_pipeline: 'perubahan_data', tahap: 'diajukan', urutan: 1, is_wajib: true, default_sla_days: 1, handler_role: 'pic_rs', description: 'PIC RS ajukan perubahan data' },
