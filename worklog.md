@@ -1023,3 +1023,79 @@ Approval flow (standar industri):
 - SP1/SP2: PP draft → CM review → approve → kirim (2-layer, 4-Eyes)
 - SP3: PP draft → CM review → Kabid approve → kirim (3-layer)
 - Surat edaran: CM draft langsung → kirim (1-layer)
+
+---
+Task ID: WORD-EDITOR-TIPTAP
+Agent: main
+Task: Word Editor berbasis TipTap (WYSIWYG) + Print/PDF untuk dokumen operasional
+
+Schema: tidak ada perubahan (gunakan wpa_dokumen_operasional.data_jsonb.html_content)
+
+API:
+- POST /api/dokumen-operasional/preview: 
+  - Download .docx dari storage → mammoth convertToHtml → replace {{PLACEHOLDER}}
+  - Auto-add signature space (BPJS + Faskes, tanda tangan basah)
+  - Fallback: generateBasicHtml() jika tidak ada template
+  - Placeholder yang belum terisi → highlight kuning '[isi manual]'
+- POST /api/dokumen-operasional/save/[id]:
+  - Save HTML content ke data_jsonb.html_content
+  - Log audit: 'edit via WYSIWYG editor'
+
+UI (DocumentEditor component):
+- TipTap WYSIWYG editor dengan toolbar:
+  • Bold, Italic, Underline
+  • Heading H1, H2, H3
+  • Alignment: Left, Center, Right
+  • Bullet List, Numbered List
+  • Highlight
+  • Horizontal Rule
+- Editor area: Times New Roman 12pt, line-height 1.6 (dokumen formal)
+- Tombol Simpan: save HTML ke DB
+- Tombol Print/PDF: window.open → CSS @page A4 margin 20mm → window.print()
+  - Auto-save sebelum print
+  - Print window terpisah dengan styling lengkap
+- Tombol Tutup: kembali ke daftar
+
+Integrasi ke DokumenOperasionalView:
+- Auto-open editor setelah create dokumen (editingDokumenId state)
+- Tombol 'Edit' di tabel Riwayat → buka editor
+- Tombol '← Kembali ke Daftar' untuk kembali dari editor
+- Conditional render: jika editingDokumenId set → tampilkan DocumentEditor
+
+Bug fix:
+- @tiptap/extension-table tidak punya default export → hapus import (tidak dipakai)
+- Build error di Vercel karena Table import → fix dengan hapus
+
+Test via Agent Browser (1 per 1):
+1. ✅ CM login + Dokumen Operasional page: 5 menu, 3 tabs (Buat Surat, Riwayat, Template)
+2. ✅ Riwayat: 2 dokumen dengan tombol 'Edit' di kolom Aksi
+3. ✅ Edit existing document → TipTap editor loads:
+   - .ProseMirror editor exists
+   - Toolbar: Bold/Italic/Underline/H1-3/Align/List/Highlight/HR + Simpan + Print/PDF
+   - Content auto-filled: NAMA_KANTOR_CABANG, ALAMAT, TELP, TANGGAL, narasi
+4. ✅ Print/PDF: window.open → new tab "Dokumen — Mitra PLKK"
+   - CSS @page A4 margin 20mm
+   - @media print styling
+   - Content: full dokumen dengan auto-fill
+5. ✅ Create new document → auto-open editor:
+   - SP1 form → submit → editor auto-open
+   - Content auto-filled dari DB (8+ fields)
+   - Hint text: "💡 Edit dokumen bebas di sini..."
+
+Auto-fill verified (Single Source of Truth):
+- NAMA_KANTOR_CABANG → "BPJS Ketenagakerjaan Cabang Cirebon"
+- ALAMAT_KANTOR_CABANG → "Jl. Sisingamangaraja No. 1, Cirebon"
+- KOTA_KANTOR_CABANG → "Cirebon"
+- TELP_KANTOR → "0231-123456"
+- TANGGAL_DOKUMEN → "15 Juli 2026"
+- HARI_INI → "Rabu"
+- NARASI → dari PP/CM input form
+- Signature space → auto-add di akhir (tanda tangan basah)
+
+Stage Summary:
+- ✅ TipTap WYSIWYG editor bekerja: toolbar lengkap, auto-fill, print/PDF
+- ✅ Print: window.open + CSS @page A4 + window.print() (tanda tangan basah)
+- ✅ Save: HTML content tersimpan di data_jsonb.html_content
+- ✅ Auto-open editor after create dokumen
+- ✅ Tombol Edit di Riwayat → buka editor
+- ✅ Production: https://mitra-plkk.vercel.app
