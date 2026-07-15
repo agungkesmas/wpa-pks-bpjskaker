@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
       if (!isAdmin(me.role)) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
-      if (me.role === 'admin_kantor' && me.kantor_cabang_id !== kantor_cabang_id) {
+      if ((me.role as string) === 'admin_kantor' && me.kantor_cabang_id !== kantor_cabang_id) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
       const { data, error } = await supabaseAdmin

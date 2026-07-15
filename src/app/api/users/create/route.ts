@@ -7,7 +7,7 @@ import { z } from 'zod'
 const schema = z.object({
   email: z.string().email(),
   full_name: z.string().min(2),
-  role: z.enum(['super_admin', 'admin_kantor', 'case_manager', 'kepala_bidang', 'pic_rs', 'legal_rs']),
+  role: z.enum(['super_admin', 'case_manager', 'kepala_bidang', 'penata_pelayanan', 'pic_rs', 'legal_rs']),
   phone: z.string().optional(),
   nip: z.string().optional(),
   password: z.string().min(8),

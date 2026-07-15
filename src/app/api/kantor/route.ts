@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
       .order('nama', { ascending: true })
     
     // admin_kantor hanya lihat cabangnya sendiri
-    if (me.role === 'admin_kantor' && me.kantor_cabang_id) {
+    if ((me.role as string) === 'admin_kantor' && me.kantor_cabang_id) {
       query = query.eq('id', me.kantor_cabang_id)
     }
     
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     }
     
     // Tambah stats per kantor
-    const result = []
+    const result: any[] = []
     for (const k of kantorList || []) {
       const [users, faskes, pksAktif] = await Promise.all([
         supabaseAdmin.from('wpa_users').select('*', { count: 'exact', head: true }).eq('kantor_cabang_id', k.id).eq('is_active', true),

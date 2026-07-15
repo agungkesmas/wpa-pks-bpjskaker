@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
   try {
     const me = await getSession()
     if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    if (!['admin_kantor','case_manager','kepala_bidang'].includes(me.role)) {
+    if (!['super_admin','case_manager','kepala_bidang'].includes(me.role)) {
       return NextResponse.json({ error: 'Hanya BPJS staff yang bisa input acuan' }, { status: 403 })
     }
     

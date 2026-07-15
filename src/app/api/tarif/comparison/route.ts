@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
         .eq('kantor_cabang_id', kantor_cabang_id)
         .order('nama')
       
-      const result = []
+      const result: any[] = []
       for (const f of faskesList || []) {
         const { data: items } = await supabaseAdmin
           .from('wpa_tarif_faskes')

@@ -42,8 +42,8 @@ export default async function KantorDetailPage({ params }: { params: Promise<{ i
   return (
     <KantorDetailManager
       kantor={kantor}
-      users={users || []}
-      faskes={faskes || []}
+      users={(users || []) as any}
+      faskes={(faskes || []) as any}
       allKantor={allKantor || []}
       stats={{
         users: (users || []).filter(u => u.is_active).length,

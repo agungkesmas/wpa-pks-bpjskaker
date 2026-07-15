@@ -33,8 +33,8 @@ export default async function SuperAdminPengajuanPage() {
             const daysLeft = p.sla_deadline ? Math.ceil((new Date(p.sla_deadline).getTime() - Date.now()) / 86400000) : null
             return (
               <TableRow key={p.id}>
-                <TableCell className="font-medium text-sm">{p.wpa_faskes?.nama || '-'}</TableCell>
-                <TableCell className="text-xs">{p.wpa_kantor_cabang?.nama || '-'}</TableCell>
+                <TableCell className="font-medium text-sm">{(p.wpa_faskes as any)?.nama || '-'}</TableCell>
+                <TableCell className="text-xs">{(p.wpa_kantor_cabang as any)?.nama || '-'}</TableCell>
                 <TableCell><Badge variant="outline">{p.jenis.replace(/_/g, ' ')}</Badge></TableCell>
                 <TableCell className="text-xs">{p.current_tahap.replace(/_/g, ' ')}</TableCell>
                 <TableCell><span className={p.sla_breached || (daysLeft !== null && daysLeft < 0) ? 'text-red-700 font-semibold text-xs' : 'text-xs text-slate-500'}>{daysLeft !== null ? `${daysLeft}h` : '-'}</span></TableCell>

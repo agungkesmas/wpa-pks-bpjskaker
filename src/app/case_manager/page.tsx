@@ -73,7 +73,7 @@ export default async function CMDashboard() {
                 return (
                   <div key={p.id} className="flex items-center justify-between p-2 rounded border border-slate-200">
                     <div>
-                      <div className="text-sm font-semibold">{p.wpa_faskes?.nama || 'Faskes'}</div>
+                      <div className="text-sm font-semibold">{(p.wpa_faskes as any)?.nama || 'Faskes'}</div>
                       <div className="text-xs text-slate-500 flex items-center gap-1">
                         <Clock className="w-3 h-3" /> {p.current_tahap.replace(/_/g, ' ')}
                         {p.sla_deadline && <span className={p.sla_breached || (daysLeft !== null && daysLeft < 0) ? 'text-red-700 font-semibold ml-1' : 'ml-1'}>· {daysLeft !== null && daysLeft >= 0 ? `${daysLeft}h` : 'lewat'}</span>}

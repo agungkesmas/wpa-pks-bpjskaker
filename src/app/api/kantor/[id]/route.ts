@@ -23,7 +23,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     }
     
     // admin_kantor hanya lihat cabangnya sendiri
-    if (me.role === 'admin_kantor' && me.kantor_cabang_id !== id) {
+    if ((me.role as string) === 'admin_kantor' && me.kantor_cabang_id !== id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
     
@@ -43,7 +43,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const { id } = await params
     
     // admin_kantor hanya update cabangnya sendiri
-    if (me.role === 'admin_kantor' && me.kantor_cabang_id !== id) {
+    if ((me.role as string) === 'admin_kantor' && me.kantor_cabang_id !== id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
     

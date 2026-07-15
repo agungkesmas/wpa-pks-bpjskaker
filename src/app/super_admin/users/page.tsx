@@ -67,7 +67,7 @@ export default async function AllUsersPage() {
                       </div>
                     </TableCell>
                     <TableCell><Badge className={ROLE_COLORS[u.role]}>{ROLE_LABELS[u.role as keyof typeof ROLE_LABELS]}</Badge></TableCell>
-                    <TableCell className="text-xs">{u.wpa_kantor_cabang?.nama || '-'}</TableCell>
+                    <TableCell className="text-xs">{(u.wpa_kantor_cabang as any)?.nama || '-'}</TableCell>
                     <TableCell className="text-xs font-mono">{u.nip || '-'}</TableCell>
                     <TableCell className="text-xs text-slate-500">
                       {u.last_login_at ? new Date(u.last_login_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }) : 'Belum pernah'}

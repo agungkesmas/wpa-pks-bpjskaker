@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
     if (status) query = query.eq('status', status)
     
     // admin_kantor hanya lihat mutasi yang melibatkan cabangnya
-    if (me.role === 'admin_kantor' && me.kantor_cabang_id) {
+    if ((me.role as string) === 'admin_kantor' && me.kantor_cabang_id) {
       query = query.or(`from_kantor_cabang_id.eq.${me.kantor_cabang_id},to_kantor_cabang_id.eq.${me.kantor_cabang_id}`)
     }
     

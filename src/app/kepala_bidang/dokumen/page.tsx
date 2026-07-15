@@ -31,7 +31,7 @@ export default async function KabidDokumenPage() {
             </TableCell></TableRow>
           ) : pksList?.map(p => (
             <TableRow key={p.id}>
-              <TableCell className="text-sm font-medium">{p.wpa_faskes?.nama || '-'}</TableCell>
+              <TableCell className="text-sm font-medium">{(p.wpa_faskes as any)?.nama || '-'}</TableCell>
               <TableCell className="font-mono text-xs">{p.kode_pks_pihak_pertama || '-'}</TableCell>
               <TableCell><Badge variant="outline">{p.jenis.replace(/_/g, ' ')}</Badge></TableCell>
               <TableCell className="text-xs">{p.tanggal_mulai ? new Date(p.tanggal_mulai).toLocaleDateString('id-ID') : '-'} s/d {p.tanggal_berakhir ? new Date(p.tanggal_berakhir).toLocaleDateString('id-ID') : '-'}</TableCell>

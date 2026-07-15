@@ -15,9 +15,9 @@ import { ROLE_LABELS, type UserRole } from '@/lib/auth-constants'
 
 const ROLE_COLORS: Record<UserRole, string> = {
   super_admin: 'bg-rose-100 text-rose-800',
-  admin_kantor: 'bg-slate-100 text-slate-800',
   case_manager: 'bg-blue-100 text-blue-800',
   kepala_bidang: 'bg-teal-100 text-teal-800',
+  penata_pelayanan: 'bg-cyan-100 text-cyan-800',
   pic_rs: 'bg-orange-100 text-orange-800',
   legal_rs: 'bg-purple-100 text-purple-800',
 }

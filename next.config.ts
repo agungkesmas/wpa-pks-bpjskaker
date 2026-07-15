@@ -22,15 +22,16 @@ const nextConfig: NextConfig = {
       '@radix-ui/react-tabs',
       '@radix-ui/react-checkbox',
     ],
-    // Keluarkan package berat dari bundle (native ESM, jangan di-bundle)
-    serverComponentsExternalPackages: [
-      'mammoth',      // 2.5MB — docx parser
-      'xlsx',         // 7.3MB — Excel parser
-      'docx',         // docx generator
-      'bcryptjs',     // crypto native
-      'jsonwebtoken', // crypto native
-    ],
   },
+
+  // Keluarkan package berat dari bundle (Next.js 16: pindah dari experimental ke root level)
+  serverExternalPackages: [
+    'mammoth',      // 2.5MB — docx parser
+    'xlsx',         // 7.3MB — Excel parser
+    'docx',         // docx generator
+    'bcryptjs',     // crypto native
+    'jsonwebtoken', // crypto native
+  ],
 
   // Image optimization
   images: {

@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
         email,
         password_hash: hashPassword(password),
         full_name,
-        role: 'admin_kantor',
+        role: 'super_admin',
         kantor_cabang_id: kantor?.id || null,
         is_active: true,
       })

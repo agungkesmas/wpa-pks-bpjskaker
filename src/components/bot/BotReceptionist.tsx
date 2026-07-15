@@ -19,15 +19,15 @@ interface BotReceptionistProps {
     id: string
     email: string
     full_name: string
-    role: 'admin_kantor' | 'case_manager' | 'kepala_bidang' | 'pic_rs' | 'legal_rs'
+    role: 'super_admin' | 'case_manager' | 'kepala_bidang' | 'penata_pelayanan' | 'pic_rs' | 'legal_rs'
   }
 }
 
-const QUICK_ACTIONS = {
-  admin_kantor: [
-    { label: 'Tambah user baru', href: '/admin_kantor/users' },
-    { label: 'Upload template PKS', href: '/admin_kantor/templates' },
-    { label: 'Lihat audit log', href: '/admin_kantor/audit' },
+const QUICK_ACTIONS: Record<string, { label: string; href: string }[]> = {
+  super_admin: [
+    { label: 'Tambah user baru', href: '/super_admin/users' },
+    { label: 'Upload template PKS', href: '/super_admin/template' },
+    { label: 'Lihat audit log', href: '/super_admin/audit' },
   ],
   case_manager: [
     { label: 'Buat PKS baru', href: '/case_manager/pks/new' },

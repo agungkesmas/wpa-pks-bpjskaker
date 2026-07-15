@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
     mutasi.wpa_users = userData
     
     // admin_kantor hanya bisa print mutasi yang melibatkan cabangnya
-    if (me.role === 'admin_kantor' && me.kantor_cabang_id) {
+    if ((me.role as string) === 'admin_kantor' && me.kantor_cabang_id) {
       if (mutasi.from_kantor_cabang_id !== me.kantor_cabang_id && mutasi.to_kantor_cabang_id !== me.kantor_cabang_id) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }

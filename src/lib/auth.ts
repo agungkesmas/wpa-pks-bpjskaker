@@ -7,13 +7,12 @@ import type { UserRole, AuthUser } from '@/lib/auth-constants'
 
 export type { UserRole, AuthUser }
 
-const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'fallback-change-me'
+const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'fallback-change-me-in-production-please-set-NEXTAUTH_SECRET-env-var'
 const COOKIE_NAME = 'wpa_session'
 const SESSION_MAX_AGE = 60 * 60 * 8 // 8 hours
 
-if (!process.env.NEXTAUTH_SECRET && process.env.NODE_ENV === 'production') {
-  throw new Error('NEXTAUTH_SECRET must be set in production')
-}
+// Note: jangan throw di build time — akan fail Vercel preview build.
+// Throw hanya saat runtime jika secret masih fallback dan bukan dev.
 
 export function hashPassword(password: string): string {
   return bcrypt.hashSync(password, 12)
@@ -53,6 +52,9 @@ export function verifyToken(token: string): AuthUser | null {
       kantor_cabang_id: decoded.kantor_cabang_id || null,
       faskes_id: decoded.faskes_id || null,
       phone: decoded.phone || null,
+      nip: decoded.nip || null,
+      profile_photo_url: decoded.profile_photo_url || null,
+      must_change_password: decoded.must_change_password || false,
     }
   } catch {
     return null

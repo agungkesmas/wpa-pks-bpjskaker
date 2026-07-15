@@ -7,7 +7,7 @@ const schema = z.object({
   dokumen_id: z.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
   action: z.enum(['approve', 'reject', 'edit']),
   catatan: z.string().optional().or(z.literal('')),
-  data_jsonb: z.record(z.any()).optional(),
+  data_jsonb: z.record(z.string(), z.any()).optional(),
 })
 
 export async function POST(req: NextRequest) {

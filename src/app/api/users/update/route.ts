@@ -11,7 +11,7 @@ const schema = z.object({
   full_name: z.string().min(2).optional(),
   phone: z.string().optional(),
   nip: z.string().optional(),
-  role: z.enum(['super_admin', 'admin_kantor', 'case_manager', 'kepala_bidang', 'pic_rs', 'legal_rs']).optional(),
+  role: z.enum(['super_admin', 'case_manager', 'kepala_bidang', 'penata_pelayanan', 'pic_rs', 'legal_rs']).optional(),
   kantor_cabang_id: z.string().uuid().optional().or(z.literal('').transform(() => undefined)),
   faskes_id: z.string().uuid().optional().or(z.literal('').transform(() => undefined)),
   temp_password: z.string().optional(),

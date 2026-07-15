@@ -21,7 +21,7 @@ export default async function ProfilePage() {
     .single()
   
   if (!user) return notFound()
-  
+
   return (
     <div className="space-y-6">
       <div>
@@ -30,7 +30,7 @@ export default async function ProfilePage() {
           Kelola akun Anda — ubah password, foto, kontak. Field yang butuh approval admin (nama, role, kantor) tidak bisa diubah sendiri.
         </p>
       </div>
-      <ProfileManager user={user} />
+      <ProfileManager user={user as any} />
     </div>
   )
 }

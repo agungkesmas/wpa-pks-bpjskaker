@@ -70,7 +70,7 @@ export default async function PICRSDashboard() {
         <p className="text-sm text-slate-600">
           Halo {me.full_name}. {isTemporary 
             ? 'Akun Anda belum terasosiasi ke faskes. Silakan Ajukan PKS Baru.'
-            : `Status PKS & aktivitas faskes ${userFaskes[0].wpa_faskes?.nama}.`}
+            : `Status PKS & aktivitas faskes ${(userFaskes[0].wpa_faskes as any)?.nama}.`}
         </p>
       </div>
       
@@ -81,7 +81,7 @@ export default async function PICRSDashboard() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <div className="text-xs uppercase tracking-wider text-slate-500 mb-1">PKS Aktif</div>
-                <div className="text-xl font-bold text-slate-900 mb-2">{userFaskes[0].wpa_faskes?.nama}</div>
+                <div className="text-xl font-bold text-slate-900 mb-2">{(userFaskes?.[0]?.wpa_faskes as any)?.nama}</div>
                 <div className="text-sm text-slate-600">
                   Nomor: <span className="font-semibold">{pksAktif.kode_pks_pihak_pertama || '-'}</span><br/>
                   Masa: {pksAktif.tanggal_mulai ? new Date(pksAktif.tanggal_mulai).toLocaleDateString('id-ID') : '-'} s/d {new Date(pksAktif.tanggal_berakhir).toLocaleDateString('id-ID')}

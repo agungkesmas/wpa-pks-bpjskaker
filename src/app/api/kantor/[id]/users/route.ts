@@ -13,7 +13,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const { id } = await params
     
     // admin_kantor hanya lihat user di cabangnya
-    if (me.role === 'admin_kantor' && me.kantor_cabang_id !== id) {
+    if ((me.role as string) === 'admin_kantor' && me.kantor_cabang_id !== id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
     
