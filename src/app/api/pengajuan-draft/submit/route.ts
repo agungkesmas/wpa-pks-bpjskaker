@@ -69,21 +69,27 @@ export async function POST(req: NextRequest) {
       .limit(1)
       .maybeSingle()
 
-    // Get SLA for 'ditinjau' tahap
+    // Get next tahap from TAHAP_FLOW (could be 'ditinjau_kajian_tarif' or 'ditinjau')
+    const { TAHAP_FLOW } = await import('@/lib/wpa-constants')
+    const flow = TAHAP_FLOW[pipeline.jenis]
+    const currentStep = flow?.find((s: any) => s.current === 'diajukan')
+    const nextTahap = currentStep?.next || 'ditinjau'
+
+    // Get SLA for next tahap
     const { data: tahapConfig } = await supabaseAdmin
       .from('wpa_pipeline_tahap_config')
       .select('default_sla_days')
       .eq('jenis_pipeline', pipeline.jenis)
-      .eq('tahap', 'ditinjau')
+      .eq('tahap', nextTahap)
       .maybeSingle()
-    const slaDays = tahapConfig?.default_sla_days || 2
+    const slaDays = tahapConfig?.default_sla_days || 3
     const slaDeadline = new Date(Date.now() + slaDays * 24 * 60 * 60 * 1000).toISOString()
 
-    // Update pipeline: advance to 'ditinjau'
+    // Update pipeline: advance to next tahap
     const { error: updErr } = await supabaseAdmin
       .from('wpa_pipeline')
       .update({
-        current_tahap: 'ditinjau',
+        current_tahap: nextTahap,
         current_handler_id: cm?.id || null,
         handler_since: new Date().toISOString(),
         sla_deadline: slaDeadline,
@@ -93,20 +99,20 @@ export async function POST(req: NextRequest) {
       .eq('id', pipeline.id)
     if (updErr) throw updErr
 
-    // Insert logs: complete diajukan + enter ditinjau
+    // Insert logs: complete diajukan + enter next tahap
     await supabaseAdmin.from('wpa_pipeline_log').insert([
       {
         pipeline_id: pipeline.id,
         tahap: 'diajukan',
         action: 'complete',
         from_tahap: 'diajukan',
-        to_tahap: 'ditinjau',
+        to_tahap: nextTahap,
         performed_by: me.id,
         catatan: 'PIC RS submit dengan semua file wajib lengkap',
       },
       {
         pipeline_id: pipeline.id,
-        tahap: 'ditinjau',
+        tahap: nextTahap,
         action: 'enter',
         performed_by: me.id,
         catatan: 'Diteruskan ke CM untuk review dokumen',
@@ -137,7 +143,7 @@ export async function POST(req: NextRequest) {
       action: 'pipeline_draft_submit',
       entity_type: 'pipeline',
       entity_id: pipeline.id,
-      after_data: { from: 'diajukan', to: 'ditinjau', total_files: uploadedJenisList.length },
+      after_data: { from: 'diajukan', to: nextTahap, total_files: uploadedJenisList.length },
       ip: req.headers.get('x-forwarded-for') || undefined,
       user_agent: req.headers.get('user-agent') || undefined,
     })

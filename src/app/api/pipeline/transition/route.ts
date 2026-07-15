@@ -327,7 +327,7 @@ export async function POST(req: NextRequest) {
       // Rule: PIC RS hanya bisa cancel di tahap awal (diajukan/ditinjau)
       //       CM/Kabid/SuperAdmin bisa cancel kapan saja (intervensi)
       if (me.role === 'pic_rs') {
-        const allowedTahaps = ['diajukan', 'ditinjau']
+        const allowedTahaps = ['diajukan', 'ditinjau', 'ditinjau_kajian_tarif']
         if (!allowedTahaps.includes(pipeline.current_tahap)) {
           return NextResponse.json({
             error: `Pengajuan sudah masuk tahap "${TAHAP_LABELS[pipeline.current_tahap] || pipeline.current_tahap}". Pembatalan tidak bisa dilakukan oleh PIC RS. Hubungi CM untuk proses lebih lanjut.`

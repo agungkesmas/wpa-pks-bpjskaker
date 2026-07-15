@@ -34,13 +34,15 @@ export const JENIS_PENGAJUAN_SHORT: Record<string, string> = {
   perubahan_data: 'Perubahan Data',
 }
 
-// --- Tahap Labels (canonical — label "Kajian Tarif" for tinjauan_tarif) ---
+// --- Tahap Labels (canonical — 6 tahap ringkas) ---
 export const TAHAP_LABELS: Record<string, string> = {
   diajukan: 'Pengajuan',
   ditinjau: 'Peninjauan Surat',
+  ditinjau_kajian_tarif: 'Peninjauan & Kajian Tarif',
   kredensialing: 'Kredensialing',
-  kredensialing_ulang: 'Kredensialing Ulang',
-  tinjauan_tarif: 'Kajian Tarif',
+  kredensialing_ulang: 'Kredensialing',  // alias (lama)
+  tinjauan_tarif: 'Kajian Tarif',  // alias (lama)
+  negosiasi_tarif: 'Kajian Tarif',  // alias (lama)
   drafting_pks: 'Drafting PKS',
   drafting_adendum: 'Drafting Adendum',
   approval_kabid: 'Approval Kabid',
@@ -53,64 +55,62 @@ export const TAHAP_LABELS: Record<string, string> = {
 // (current_tahap → next_tahap, default handler_role)
 // Note: 'adendum_harga' and 'adendum_layanan_baru' share the same flow shape
 // (kredensialing_ulang added to all adendum flows that touch faskes credentials)
+// --- Tahap Flow per Jenis Pipeline (6 tahap ringkas) ---
+// Alur: Pengajuan → Peninjauan & Kajian Tarif → Kredensialing → Drafting → Approval & Review → Tanda Tangan
 export const TAHAP_FLOW: Record<string, { current: string; next: string; handler_role: string }[]> = {
+  // PKS BARU (6 tahap)
   pks_baru: [
-    { current: 'diajukan', next: 'ditinjau', handler_role: 'case_manager' },
-    { current: 'ditinjau', next: 'kredensialing', handler_role: 'case_manager' },
-    { current: 'kredensialing', next: 'tinjauan_tarif', handler_role: 'case_manager' },
-    { current: 'tinjauan_tarif', next: 'drafting_pks', handler_role: 'case_manager' },
+    { current: 'diajukan', next: 'ditinjau_kajian_tarif', handler_role: 'case_manager' },
+    { current: 'ditinjau_kajian_tarif', next: 'kredensialing', handler_role: 'case_manager' },
+    { current: 'kredensialing', next: 'drafting_pks', handler_role: 'case_manager' },
     { current: 'drafting_pks', next: 'approval_kabid', handler_role: 'kepala_bidang' },
     { current: 'approval_kabid', next: 'review_legal_rs', handler_role: 'legal_rs' },
     { current: 'review_legal_rs', next: 'tanda_tangan', handler_role: 'kepala_bidang' },
     { current: 'tanda_tangan', next: '__complete__', handler_role: 'kepala_bidang' },
   ],
+  // PERPANJANGAN (6 tahap — same as pks_baru)
   perpanjangan: [
-    { current: 'diajukan', next: 'ditinjau', handler_role: 'case_manager' },
-    { current: 'ditinjau', next: 'kredensialing_ulang', handler_role: 'case_manager' },
-    { current: 'kredensialing_ulang', next: 'tinjauan_tarif', handler_role: 'case_manager' },
-    { current: 'tinjauan_tarif', next: 'drafting_pks', handler_role: 'case_manager' },
+    { current: 'diajukan', next: 'ditinjau_kajian_tarif', handler_role: 'case_manager' },
+    { current: 'ditinjau_kajian_tarif', next: 'kredensialing', handler_role: 'case_manager' },
+    { current: 'kredensialing', next: 'drafting_pks', handler_role: 'case_manager' },
     { current: 'drafting_pks', next: 'approval_kabid', handler_role: 'kepala_bidang' },
     { current: 'approval_kabid', next: 'review_legal_rs', handler_role: 'legal_rs' },
     { current: 'review_legal_rs', next: 'tanda_tangan', handler_role: 'kepala_bidang' },
     { current: 'tanda_tangan', next: '__complete__', handler_role: 'kepala_bidang' },
   ],
+  // ADENDUM HARGA/TARIF (6 tahap)
   adendum_harga: [
-    { current: 'diajukan', next: 'ditinjau', handler_role: 'case_manager' },
-    { current: 'ditinjau', next: 'kredensialing_ulang', handler_role: 'case_manager' },
-    { current: 'kredensialing_ulang', next: 'tinjauan_tarif', handler_role: 'case_manager' },
-    { current: 'tinjauan_tarif', next: 'drafting_adendum', handler_role: 'case_manager' },
+    { current: 'diajukan', next: 'ditinjau_kajian_tarif', handler_role: 'case_manager' },
+    { current: 'ditinjau_kajian_tarif', next: 'kredensialing', handler_role: 'case_manager' },
+    { current: 'kredensialing', next: 'drafting_adendum', handler_role: 'case_manager' },
     { current: 'drafting_adendum', next: 'approval_kabid', handler_role: 'kepala_bidang' },
     { current: 'approval_kabid', next: 'review_legal_rs', handler_role: 'legal_rs' },
     { current: 'review_legal_rs', next: 'tanda_tangan', handler_role: 'kepala_bidang' },
     { current: 'tanda_tangan', next: '__complete__', handler_role: 'kepala_bidang' },
   ],
-  // adendum_layanan_baru = same shape as adendum_harga (new layanan implies new tarif too)
+  // ADENDUM LAYANAN BARU (6 tahap — same as adendum_harga)
   adendum_layanan_baru: [
-    { current: 'diajukan', next: 'ditinjau', handler_role: 'case_manager' },
-    { current: 'ditinjau', next: 'kredensialing_ulang', handler_role: 'case_manager' },
-    { current: 'kredensialing_ulang', next: 'tinjauan_tarif', handler_role: 'case_manager' },
-    { current: 'tinjauan_tarif', next: 'drafting_adendum', handler_role: 'case_manager' },
+    { current: 'diajukan', next: 'ditinjau_kajian_tarif', handler_role: 'case_manager' },
+    { current: 'ditinjau_kajian_tarif', next: 'kredensialing', handler_role: 'case_manager' },
+    { current: 'kredensialing', next: 'drafting_adendum', handler_role: 'case_manager' },
     { current: 'drafting_adendum', next: 'approval_kabid', handler_role: 'kepala_bidang' },
     { current: 'approval_kabid', next: 'review_legal_rs', handler_role: 'legal_rs' },
     { current: 'review_legal_rs', next: 'tanda_tangan', handler_role: 'kepala_bidang' },
     { current: 'tanda_tangan', next: '__complete__', handler_role: 'kepala_bidang' },
   ],
-  // Dropping Pusat: 4 tahap (skip diajuan/ditinjau/kredensialing/tinjauan_tarif —
-  // karena ini adendum dari pusat, langsung drafting. Initiated_by = CM/Kabid.)
+  // ADENDUM DROPPING PUSAT (4 tahap — skip diajukan/ditinjau/kredensialing)
   adendum_dropping: [
     { current: 'drafting_adendum', next: 'approval_kabid', handler_role: 'kepala_bidang' },
     { current: 'approval_kabid', next: 'review_legal_rs', handler_role: 'legal_rs' },
     { current: 'review_legal_rs', next: 'tanda_tangan', handler_role: 'kepala_bidang' },
     { current: 'tanda_tangan', next: '__complete__', handler_role: 'kepala_bidang' },
   ],
-  // Adendum Masal: 3 tahap (PIC RS submit → CM group review → auto complete + generate PDF)
-  // Tanpa approval Kabid (CM cukup), tanpa TTD elektronik (pakai TTD basah), tanpa review Legal RS
-  // (template sudah legal-reviewed oleh admin pusat saat upload).
+  // ADENDUM MASAL (3 tahap — PIC RS submit → CM group review → complete)
   adendum_masal: [
     { current: 'diajukan', next: 'ditinjau', handler_role: 'case_manager' },
     { current: 'ditinjau', next: '__complete__', handler_role: 'case_manager' },
   ],
-  // Perubahan Data: skip kredensialing_ulang & tinjauan_tarif (bukan tarif, bukan cred)
+  // PERUBAHAN DATA (5 tahap — skip kredensialing, bukan tarif/bukan cred)
   perubahan_data: [
     { current: 'diajukan', next: 'ditinjau', handler_role: 'case_manager' },
     { current: 'ditinjau', next: 'drafting_adendum', handler_role: 'case_manager' },
@@ -122,7 +122,7 @@ export const TAHAP_FLOW: Record<string, { current: string; next: string; handler
 }
 
 // Tahap yang bisa di-skip (conditional, is_wajib = false in DB)
-export const SKIPPABLE_TAHAPS = ['tinjauan_tarif']
+export const SKIPPABLE_TAHAPS: string[] = []
 
 // --- Tahap Config Seed (urutan, is_wajib, sla, handler, desc) ---
 // Used by SQL migration; mirrors TAHAP_FLOW. Kept here as reference for the
@@ -136,64 +136,60 @@ export const TAHAP_CONFIG_SEED: Array<{
   handler_role: string
   description: string
 }> = [
-  // PKS BARU (8 tahap)
-  { jenis_pipeline: 'pks_baru', tahap: 'diajukan', urutan: 1, is_wajib: true, default_sla_days: 1, handler_role: 'pic_rs', description: 'PIC RS submit form pengajuan' },
-  { jenis_pipeline: 'pks_baru', tahap: 'ditinjau', urutan: 2, is_wajib: true, default_sla_days: 2, handler_role: 'case_manager', description: 'CM review kelengkapan dokumen' },
-  { jenis_pipeline: 'pks_baru', tahap: 'kredensialing', urutan: 3, is_wajib: true, default_sla_days: 7, handler_role: 'case_manager', description: 'Verifikasi dokumen + visitasi' },
-  { jenis_pipeline: 'pks_baru', tahap: 'tinjauan_tarif', urutan: 4, is_wajib: true, default_sla_days: 7, handler_role: 'case_manager', description: 'Kajian tarif vs Bank Tarif acuan' },
-  { jenis_pipeline: 'pks_baru', tahap: 'drafting_pks', urutan: 5, is_wajib: true, default_sla_days: 7, handler_role: 'case_manager', description: 'Auto-create draft dari template + data' },
-  { jenis_pipeline: 'pks_baru', tahap: 'approval_kabid', urutan: 6, is_wajib: true, default_sla_days: 2, handler_role: 'kepala_bidang', description: 'Approval Kabid (4-Eyes)' },
-  { jenis_pipeline: 'pks_baru', tahap: 'review_legal_rs', urutan: 7, is_wajib: true, default_sla_days: 5, handler_role: 'legal_rs', description: 'Review legal RS' },
-  { jenis_pipeline: 'pks_baru', tahap: 'tanda_tangan', urutan: 8, is_wajib: true, default_sla_days: 3, handler_role: 'kepala_bidang', description: 'Tanda tangan elektronik' },
+  // PKS BARU (6 tahap)
+  { jenis_pipeline: 'pks_baru', tahap: 'diajukan', urutan: 1, is_wajib: true, default_sla_days: 1, handler_role: 'pic_rs', description: 'PIC RS upload surat + file wajib' },
+  { jenis_pipeline: 'pks_baru', tahap: 'ditinjau_kajian_tarif', urutan: 2, is_wajib: true, default_sla_days: 3, handler_role: 'case_manager', description: 'CM review surat + AI kajian tarif vs Bank Tarif' },
+  { jenis_pipeline: 'pks_baru', tahap: 'kredensialing', urutan: 3, is_wajib: true, default_sla_days: 5, handler_role: 'case_manager', description: 'Asesmen mandiri (default) atau visitasi (jika red flag)' },
+  { jenis_pipeline: 'pks_baru', tahap: 'drafting_pks', urutan: 4, is_wajib: true, default_sla_days: 5, handler_role: 'case_manager', description: 'PIC RS isi placeholder + rapihkan format' },
+  { jenis_pipeline: 'pks_baru', tahap: 'approval_kabid', urutan: 5, is_wajib: true, default_sla_days: 2, handler_role: 'kepala_bidang', description: 'Approval Kabid (4-Eyes)' },
+  { jenis_pipeline: 'pks_baru', tahap: 'review_legal_rs', urutan: 6, is_wajib: true, default_sla_days: 5, handler_role: 'legal_rs', description: 'Review Legal RS' },
+  { jenis_pipeline: 'pks_baru', tahap: 'tanda_tangan', urutan: 7, is_wajib: true, default_sla_days: 3, handler_role: 'kepala_bidang', description: 'TTD basah kedua belah pihak' },
 
-  // PERPANJANGAN (8 tahap — kredensialing_ulang + tinjauan_tarif)
-  { jenis_pipeline: 'perpanjangan', tahap: 'diajukan', urutan: 1, is_wajib: true, default_sla_days: 1, handler_role: 'pic_rs', description: 'PIC RS/CM ajukan perpanjangan' },
-  { jenis_pipeline: 'perpanjangan', tahap: 'ditinjau', urutan: 2, is_wajib: true, default_sla_days: 2, handler_role: 'case_manager', description: 'CM review data' },
-  { jenis_pipeline: 'perpanjangan', tahap: 'kredensialing_ulang', urutan: 3, is_wajib: true, default_sla_days: 5, handler_role: 'case_manager', description: 'Asesmen mandiri/visitasi ulang' },
-  { jenis_pipeline: 'perpanjangan', tahap: 'tinjauan_tarif', urutan: 4, is_wajib: false, default_sla_days: 5, handler_role: 'case_manager', description: 'Conditional: skip jika tarif sama & wajar' },
-  { jenis_pipeline: 'perpanjangan', tahap: 'drafting_pks', urutan: 5, is_wajib: true, default_sla_days: 5, handler_role: 'case_manager', description: 'Auto-clone dari PKS lama' },
-  { jenis_pipeline: 'perpanjangan', tahap: 'approval_kabid', urutan: 6, is_wajib: true, default_sla_days: 2, handler_role: 'kepala_bidang', description: 'Approval Kabid' },
-  { jenis_pipeline: 'perpanjangan', tahap: 'review_legal_rs', urutan: 7, is_wajib: true, default_sla_days: 5, handler_role: 'legal_rs', description: 'Review legal RS' },
-  { jenis_pipeline: 'perpanjangan', tahap: 'tanda_tangan', urutan: 8, is_wajib: true, default_sla_days: 3, handler_role: 'kepala_bidang', description: 'Tanda tangan' },
+  // PERPANJANGAN (6 tahap)
+  { jenis_pipeline: 'perpanjangan', tahap: 'diajukan', urutan: 1, is_wajib: true, default_sla_days: 1, handler_role: 'pic_rs', description: 'PIC RS upload surat permohonan + tarif' },
+  { jenis_pipeline: 'perpanjangan', tahap: 'ditinjau_kajian_tarif', urutan: 2, is_wajib: true, default_sla_days: 3, handler_role: 'case_manager', description: 'CM review surat + AI kajian tarif' },
+  { jenis_pipeline: 'perpanjangan', tahap: 'kredensialing', urutan: 3, is_wajib: true, default_sla_days: 5, handler_role: 'case_manager', description: 'Asesmen mandiri/visitasi' },
+  { jenis_pipeline: 'perpanjangan', tahap: 'drafting_pks', urutan: 4, is_wajib: true, default_sla_days: 5, handler_role: 'case_manager', description: 'PIC RS isi placeholder (auto-clone dari PKS lama)' },
+  { jenis_pipeline: 'perpanjangan', tahap: 'approval_kabid', urutan: 5, is_wajib: true, default_sla_days: 2, handler_role: 'kepala_bidang', description: 'Approval Kabid' },
+  { jenis_pipeline: 'perpanjangan', tahap: 'review_legal_rs', urutan: 6, is_wajib: true, default_sla_days: 5, handler_role: 'legal_rs', description: 'Review Legal RS' },
+  { jenis_pipeline: 'perpanjangan', tahap: 'tanda_tangan', urutan: 7, is_wajib: true, default_sla_days: 3, handler_role: 'kepala_bidang', description: 'TTD basah + PKS lama berakhir' },
 
-  // ADENDUM HARGA/TARIF (8 tahap — kredensialing_ulang + tinjauan_tarif)
+  // ADENDUM HARGA (6 tahap)
   { jenis_pipeline: 'adendum_harga', tahap: 'diajukan', urutan: 1, is_wajib: true, default_sla_days: 1, handler_role: 'pic_rs', description: 'PIC RS ajukan perubahan tarif' },
-  { jenis_pipeline: 'adendum_harga', tahap: 'ditinjau', urutan: 2, is_wajib: true, default_sla_days: 2, handler_role: 'case_manager', description: 'CM review proposal' },
-  { jenis_pipeline: 'adendum_harga', tahap: 'kredensialing_ulang', urutan: 3, is_wajib: true, default_sla_days: 5, handler_role: 'case_manager', description: 'Verifikasi ulang kredensial + dokumen pendukung tarif' },
-  { jenis_pipeline: 'adendum_harga', tahap: 'tinjauan_tarif', urutan: 4, is_wajib: true, default_sla_days: 7, handler_role: 'case_manager', description: 'Kajian tarif baru vs Bank Tarif acuan' },
-  { jenis_pipeline: 'adendum_harga', tahap: 'drafting_adendum', urutan: 5, is_wajib: true, default_sla_days: 5, handler_role: 'case_manager', description: 'Draft adendum dari template' },
-  { jenis_pipeline: 'adendum_harga', tahap: 'approval_kabid', urutan: 6, is_wajib: true, default_sla_days: 2, handler_role: 'kepala_bidang', description: 'Approval Kabid' },
-  { jenis_pipeline: 'adendum_harga', tahap: 'review_legal_rs', urutan: 7, is_wajib: true, default_sla_days: 5, handler_role: 'legal_rs', description: 'Review legal RS' },
-  { jenis_pipeline: 'adendum_harga', tahap: 'tanda_tangan', urutan: 8, is_wajib: true, default_sla_days: 3, handler_role: 'kepala_bidang', description: 'Tanda tangan' },
+  { jenis_pipeline: 'adendum_harga', tahap: 'ditinjau_kajian_tarif', urutan: 2, is_wajib: true, default_sla_days: 3, handler_role: 'case_manager', description: 'CM review + AI kajian tarif baru' },
+  { jenis_pipeline: 'adendum_harga', tahap: 'kredensialing', urutan: 3, is_wajib: true, default_sla_days: 5, handler_role: 'case_manager', description: 'Verifikasi kredensial + dokumen pendukung tarif' },
+  { jenis_pipeline: 'adendum_harga', tahap: 'drafting_adendum', urutan: 4, is_wajib: true, default_sla_days: 5, handler_role: 'case_manager', description: 'PIC RS isi placeholder adendum' },
+  { jenis_pipeline: 'adendum_harga', tahap: 'approval_kabid', urutan: 5, is_wajib: true, default_sla_days: 2, handler_role: 'kepala_bidang', description: 'Approval Kabid' },
+  { jenis_pipeline: 'adendum_harga', tahap: 'review_legal_rs', urutan: 6, is_wajib: true, default_sla_days: 5, handler_role: 'legal_rs', description: 'Review Legal RS' },
+  { jenis_pipeline: 'adendum_harga', tahap: 'tanda_tangan', urutan: 7, is_wajib: true, default_sla_days: 3, handler_role: 'kepala_bidang', description: 'TTD basah' },
 
-  // ADENDUM LAYANAN BARU (8 tahap — same shape as adendum_harga)
+  // ADENDUM LAYANAN BARU (6 tahap — same as adendum_harga)
   { jenis_pipeline: 'adendum_layanan_baru', tahap: 'diajukan', urutan: 1, is_wajib: true, default_sla_days: 1, handler_role: 'pic_rs', description: 'PIC RS ajukan layanan baru' },
-  { jenis_pipeline: 'adendum_layanan_baru', tahap: 'ditinjau', urutan: 2, is_wajib: true, default_sla_days: 2, handler_role: 'case_manager', description: 'CM review proposal layanan' },
-  { jenis_pipeline: 'adendum_layanan_baru', tahap: 'kredensialing_ulang', urutan: 3, is_wajib: true, default_sla_days: 5, handler_role: 'case_manager', description: 'Verifikasi kredensial layanan baru' },
-  { jenis_pipeline: 'adendum_layanan_baru', tahap: 'tinjauan_tarif', urutan: 4, is_wajib: true, default_sla_days: 7, handler_role: 'case_manager', description: 'Kajian tarif layanan baru' },
-  { jenis_pipeline: 'adendum_layanan_baru', tahap: 'drafting_adendum', urutan: 5, is_wajib: true, default_sla_days: 5, handler_role: 'case_manager', description: 'Draft adendum dari template' },
-  { jenis_pipeline: 'adendum_layanan_baru', tahap: 'approval_kabid', urutan: 6, is_wajib: true, default_sla_days: 2, handler_role: 'kepala_bidang', description: 'Approval Kabid' },
-  { jenis_pipeline: 'adendum_layanan_baru', tahap: 'review_legal_rs', urutan: 7, is_wajib: true, default_sla_days: 5, handler_role: 'legal_rs', description: 'Review legal RS' },
-  { jenis_pipeline: 'adendum_layanan_baru', tahap: 'tanda_tangan', urutan: 8, is_wajib: true, default_sla_days: 3, handler_role: 'kepala_bidang', description: 'Tanda tangan' },
+  { jenis_pipeline: 'adendum_layanan_baru', tahap: 'ditinjau_kajian_tarif', urutan: 2, is_wajib: true, default_sla_days: 3, handler_role: 'case_manager', description: 'CM review + AI kajian tarif layanan baru' },
+  { jenis_pipeline: 'adendum_layanan_baru', tahap: 'kredensialing', urutan: 3, is_wajib: true, default_sla_days: 5, handler_role: 'case_manager', description: 'Verifikasi kredensial layanan baru' },
+  { jenis_pipeline: 'adendum_layanan_baru', tahap: 'drafting_adendum', urutan: 4, is_wajib: true, default_sla_days: 5, handler_role: 'case_manager', description: 'PIC RS isi placeholder adendum' },
+  { jenis_pipeline: 'adendum_layanan_baru', tahap: 'approval_kabid', urutan: 5, is_wajib: true, default_sla_days: 2, handler_role: 'kepala_bidang', description: 'Approval Kabid' },
+  { jenis_pipeline: 'adendum_layanan_baru', tahap: 'review_legal_rs', urutan: 6, is_wajib: true, default_sla_days: 5, handler_role: 'legal_rs', description: 'Review Legal RS' },
+  { jenis_pipeline: 'adendum_layanan_baru', tahap: 'tanda_tangan', urutan: 7, is_wajib: true, default_sla_days: 3, handler_role: 'kepala_bidang', description: 'TTD basah' },
 
-  // ADENDUM DROPPING PUSAT (4 tahap — skip semua tahap faskes)
+  // ADENDUM DROPPING PUSAT (4 tahap)
   { jenis_pipeline: 'adendum_dropping', tahap: 'drafting_adendum', urutan: 1, is_wajib: true, default_sla_days: 14, handler_role: 'case_manager', description: 'Auto-assign, drafting per target' },
   { jenis_pipeline: 'adendum_dropping', tahap: 'approval_kabid', urutan: 2, is_wajib: true, default_sla_days: 2, handler_role: 'kepala_bidang', description: 'Approval Kabid' },
-  { jenis_pipeline: 'adendum_dropping', tahap: 'review_legal_rs', urutan: 3, is_wajib: true, default_sla_days: 5, handler_role: 'legal_rs', description: 'Review legal RS' },
-  { jenis_pipeline: 'adendum_dropping', tahap: 'tanda_tangan', urutan: 4, is_wajib: true, default_sla_days: 3, handler_role: 'kepala_bidang', description: 'Tanda tangan' },
+  { jenis_pipeline: 'adendum_dropping', tahap: 'review_legal_rs', urutan: 3, is_wajib: true, default_sla_days: 5, handler_role: 'legal_rs', description: 'Review Legal RS' },
+  { jenis_pipeline: 'adendum_dropping', tahap: 'tanda_tangan', urutan: 4, is_wajib: true, default_sla_days: 3, handler_role: 'kepala_bidang', description: 'TTD basah' },
 
-  // ADENDUM MASAL (3 tahap — PIC RS submit → CM group review → auto generate PDF)
-  { jenis_pipeline: 'adendum_masal', tahap: 'diajukan', urutan: 1, is_wajib: true, default_sla_days: 1, handler_role: 'pic_rs', description: 'PIC RS submit form placeholder adendum masal' },
-  { jenis_pipeline: 'adendum_masal', tahap: 'ditinjau', urutan: 2, is_wajib: true, default_sla_days: 3, handler_role: 'case_manager', description: 'CM group review: ceklis multi, setuju/tolak bareng' },
-  { jenis_pipeline: 'adendum_masal', tahap: 'completed', urutan: 3, is_wajib: true, default_sla_days: 0, handler_role: 'case_manager', description: 'Auto-complete: generate PDF siap print TTD basah (CM trigger via group-action)' },
+  // ADENDUM MASAL (3 tahap)
+  { jenis_pipeline: 'adendum_masal', tahap: 'diajukan', urutan: 1, is_wajib: true, default_sla_days: 1, handler_role: 'pic_rs', description: 'PIC RS submit form placeholder' },
+  { jenis_pipeline: 'adendum_masal', tahap: 'ditinjau', urutan: 2, is_wajib: true, default_sla_days: 3, handler_role: 'case_manager', description: 'CM group review: setuju/tolak bareng' },
+  { jenis_pipeline: 'adendum_masal', tahap: 'completed', urutan: 3, is_wajib: true, default_sla_days: 0, handler_role: 'case_manager', description: 'Auto-complete: PDF siap print TTD basah' },
 
-  // PERUBAHAN DATA (6 tahap — skip kredensialing_ulang & tinjauan_tarif)
+  // PERUBAHAN DATA (5 tahap — skip kredensialing & kajian tarif)
   { jenis_pipeline: 'perubahan_data', tahap: 'diajukan', urutan: 1, is_wajib: true, default_sla_days: 1, handler_role: 'pic_rs', description: 'PIC RS ajukan perubahan data' },
   { jenis_pipeline: 'perubahan_data', tahap: 'ditinjau', urutan: 2, is_wajib: true, default_sla_days: 2, handler_role: 'case_manager', description: 'CM review' },
   { jenis_pipeline: 'perubahan_data', tahap: 'drafting_adendum', urutan: 3, is_wajib: true, default_sla_days: 3, handler_role: 'case_manager', description: 'Draft adendum perubahan data' },
   { jenis_pipeline: 'perubahan_data', tahap: 'approval_kabid', urutan: 4, is_wajib: true, default_sla_days: 2, handler_role: 'kepala_bidang', description: 'Approval Kabid' },
-  { jenis_pipeline: 'perubahan_data', tahap: 'review_legal_rs', urutan: 5, is_wajib: true, default_sla_days: 5, handler_role: 'legal_rs', description: 'Review legal RS' },
-  { jenis_pipeline: 'perubahan_data', tahap: 'tanda_tangan', urutan: 6, is_wajib: true, default_sla_days: 3, handler_role: 'kepala_bidang', description: 'Tanda tangan' },
+  { jenis_pipeline: 'perubahan_data', tahap: 'review_legal_rs', urutan: 5, is_wajib: true, default_sla_days: 5, handler_role: 'legal_rs', description: 'Review Legal RS' },
+  { jenis_pipeline: 'perubahan_data', tahap: 'tanda_tangan', urutan: 6, is_wajib: true, default_sla_days: 3, handler_role: 'kepala_bidang', description: 'TTD basah' },
 ]
 
 // --- Tahap list per jenis (ordered) — for UI tracking display ---

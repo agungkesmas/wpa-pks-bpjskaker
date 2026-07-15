@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
       .from('wpa_pipeline_tahap_config')
       .select('default_sla_days')
       .eq('jenis_pipeline', data.jenis)
-      .eq('tahap', 'ditinjau')
+      .eq('tahap', 'ditinjau_kajian_tarif')
       .maybeSingle()
     const slaDays = tahapConfig?.default_sla_days || 2
 
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
         kantor_cabang_id: faskes.kantor_cabang_id,
         faskes_id: me.faskes_id,
         pks_id: pks.id,
-        current_tahap: 'ditinjau', // auto-skip "diajukan" (PIC RS submit = done)
+        current_tahap: 'ditinjau_kajian_tarif', // auto-skip "diajukan" (PIC RS submit = done)
         current_handler_id: cm?.id || null,
         handler_since: new Date().toISOString(),
         cabang_owned: true,
@@ -115,13 +115,13 @@ export async function POST(req: NextRequest) {
         tahap: 'diajukan',
         action: 'complete',
         from_tahap: 'diajukan',
-        to_tahap: 'ditinjau',
+        to_tahap: 'ditinjau_kajian_tarif',
         performed_by: me.id,
         catatan: 'PIC RS submit form adendum',
       },
       {
         pipeline_id: pipeline.id,
-        tahap: 'ditinjau',
+        tahap: 'ditinjau_kajian_tarif',
         action: 'enter',
         performed_by: me.id,
         catatan: `Diteruskan ke CM untuk review. Judul: ${data.judul}`,
