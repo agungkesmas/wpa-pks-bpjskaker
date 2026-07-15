@@ -906,3 +906,60 @@ Stage Summary:
 - ✅ UI lengkap: list, upload, detail, toggle
 - ⏳ Fase 4: Pipeline State Machine (transisi tahap + Ambil Alih)
 - ⏳ Fase 5: Drafting PKS (auto-fill dari template + data faskes)
+
+---
+Task ID: MINIM-KLIK
+Agent: main
+Task: Simplifikasi menu — minim klik (gabung Tugas Saya + Tugas Cabang)
+
+Work Log:
+- Audit 6 role dashboard via Agent Browser (sebelum perubahan):
+  • CM: 5 menu (Tugas Saya + Tugas Cabang redundant)
+  • PP: 4 menu (Tugas Saya + Tugas Cabang redundant)
+  • Kabid: 6 menu (Tugas Cabang + Pengajuan overlap)
+  • Super Admin: 6 menu (OK)
+  • PIC RS: 5 menu (OK)
+  • Legal RS: 4 menu (OK)
+
+Perubahan menu (minim klik):
+- CM: 5 → 4 menu (hapus Tugas Cabang, gabung ke Tugas Saya)
+- PP: 4 → 3 menu (hapus Tugas Cabang, gabung ke Tugas Saya)
+- Kabid: 6 → 5 menu (hapus Pengajuan, gabung ke Tugas Cabang)
+- Super Admin: 6 (OK)
+- PIC RS: 5 (OK)
+- Legal RS: 4 (OK)
+
+UI "Tugas Saya" status-aware (1 list, 3 status, tombol context-aware):
+- Section 1: "Sedang Saya Pegang" (current_handler = me) → tombol Lanjutkan
+- Section 2: "Belum Diambil" (current_handler = null) → tombol Ambil Alih
+- Section 3: "Dipegang Lainnya" (CM/PP/Kabid lain) → read-only atau PP Aktif
+
+TugasSayaView component (reusable untuk CM, PP, Kabid):
+- CM: lihat semua tugas + bisa Buka/Tutup PP (tombol per kartu)
+- PP: lihat semua, Ambil Alih untuk "Belum Diambil" atau "PP Aktif"
+- Kabid: oversight semua + bisa Buka/Tutup PP
+
+Dashboard CM & PP diupdate:
+- CM: stats "Saya Pegang" + "Belum Diambil" (bukan "Tugas Saya" + "Tugas Cabang")
+- PP: stats "Saya Pegang" + "PP Bisa Ambil"
+- Tugas terkini dengan status-aware badge di dashboard
+
+Old routes (tugas-cabang, pengajuan) → redirect ke tugas (anti-404)
+
+Test via Agent Browser (1 per 1):
+1. ✅ CM: 4 menu (Dashboard, Tugas Saya, Faskes Mitra, Bank Tarif)
+2. ✅ PP: 3 menu (Dashboard, Tugas Saya, Faskes Mitra)
+3. ✅ Kabid: 5 menu (Dashboard, Approval, Dokumen Legal, Tugas Cabang, Laporan)
+4. ✅ CM "Tugas Saya": section "Belum Diambil" dengan RS Sehat Sentosa + tombol Ambil Alih
+5. ✅ CM detail tugas: tombol Tutup PP + Ambil Alih (1 klik dari dashboard)
+6. ✅ PP "Tugas Saya": section "Belum Diambil" + tombol Ambil Alih (1 klik)
+7. ✅ Super Admin: 6 menu (OK)
+8. ✅ PIC RS: 5 menu (OK)
+9. ✅ Legal RS: 4 menu (OK)
+
+Stage Summary:
+- ✅ Menu disederhanakan: CM 4, PP 3, Kabid 5 (dari sebelumnya 5, 4, 6)
+- ✅ "Tugas Saya" status-aware: 1 list dengan 3 section + tombol context-aware
+- ✅ Minim klik: dari dashboard → 1 klik ke Tugas Saya → 1 klik ke detail/Ambil Alih
+- ✅ Tidak ada lagi redundant "Tugas Saya" + "Tugas Cabang"
+- ✅ PP tetap controlled: hanya lihat yang takeover_enabled=true atau yang dia pegang
