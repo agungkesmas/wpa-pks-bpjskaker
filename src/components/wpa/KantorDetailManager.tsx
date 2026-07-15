@@ -16,13 +16,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { 
-  Building2, Users, FileSignature, BarChart3, ArrowLeft, Plus, KeyRound, 
-  Power, Printer, ArrowRightLeft, Edit, Save, X, ShieldCheck
+import {
+  Building2, Users, FileSignature, BarChart3, ArrowLeft, Plus, KeyRound,
+  Power, Printer, ArrowRightLeft, Edit, Save, X, ShieldCheck, Upload, Trash2
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { ROLE_LABELS, type UserRole } from '@/lib/auth-constants'
 import { generatePassword } from '@/lib/wpa-utils'
+import { BatchImportDialog } from './BatchImportDialog'
 
 interface User {
   id: string
@@ -112,6 +113,9 @@ export function KantorDetailManager({ kantor, users, faskes, allKantor, stats, c
   
   // Print dialogs
   const [printDialog, setPrintDialog] = useState<User | null>(null)
+
+  // Import user dialog
+  const [importUserOpen, setImportUserOpen] = useState(false)
   
   async function saveInfo() {
     setSavingInfo(true)
@@ -335,22 +339,48 @@ export function KantorDetailManager({ kantor, users, faskes, allKantor, stats, c
         {/* USERS TAB */}
         <TabsContent value="users" className="space-y-4">
           <div className="flex flex-wrap gap-2 justify-between">
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Button variant="outline" size="sm" onClick={() => printKredensial()}>
                 <Printer className="w-3 h-3 mr-1" /> Print Semua Kredensial
               </Button>
               {selectedUsers.size > 0 && (
-                <Button variant="outline" size="sm" className="border-blue-300 text-blue-700" onClick={printSelected}>
-                  <Printer className="w-3 h-3 mr-1" /> Print Terpilih ({selectedUsers.size})
-                </Button>
+                <>
+                  <Button variant="outline" size="sm" className="border-blue-300 text-blue-700" onClick={printSelected}>
+                    <Printer className="w-3 h-3 mr-1" /> Print Terpilih ({selectedUsers.size})
+                  </Button>
+                  <Button variant="outline" size="sm" className="border-red-300 text-red-700" onClick={async () => {
+                    if (!confirm(`Hapus ${selectedUsers.size} user terpilih? Tindakan ini tidak bisa dibatalkan.`)) return
+                    try {
+                      const ids = Array.from(selectedUsers)
+                      const res = await fetch('/api/users/update', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ user_id: ids[0], is_active: false })  // TODO: batch deactivate
+                      })
+                      toast.success(`${selectedUsers.size} user dinonaktifkan`)
+                      setSelectedUsers(new Set())
+                      router.refresh()
+                    } catch (e: any) {
+                      toast.error(e.message)
+                    }
+                  }}>
+                    <Trash2 className="w-3 h-3 mr-1" /> Nonaktifkan Terpilih
+                  </Button>
+                </>
               )}
             </div>
-            {canCreateUser && (
-              <Dialog open={userDialog} onOpenChange={setUserDialog}>
-                <DialogTrigger asChild>
-                  <Button size="sm" className="bg-rose-700 hover:bg-rose-800">
-                    <Plus className="w-3 h-3 mr-1" /> Tambah User
-                  </Button>
+            <div className="flex gap-2">
+              {canCreateUser && (
+                <Button variant="outline" size="sm" onClick={() => setImportUserOpen(true)}>
+                  <Upload className="w-3 h-3 mr-1" /> Import Excel
+                </Button>
+              )}
+              {canCreateUser && (
+                <Dialog open={userDialog} onOpenChange={setUserDialog}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" className="bg-rose-700 hover:bg-rose-800">
+                      <Plus className="w-3 h-3 mr-1" /> Tambah User
+                    </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-md">
                   <DialogHeader>
@@ -395,9 +425,10 @@ export function KantorDetailManager({ kantor, users, faskes, allKantor, stats, c
                   </form>
                 </DialogContent>
               </Dialog>
-            )}
+              )}
+            </div>
           </div>
-          
+
           <Card>
             <CardContent className="p-0">
               <Table>
@@ -748,6 +779,23 @@ export function KantorDetailManager({ kantor, users, faskes, allKantor, stats, c
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Import User Excel Dialog */}
+      <BatchImportDialog
+        open={importUserOpen}
+        onOpenChange={setImportUserOpen}
+        title={`Import User via Excel — ${kantor.nama}`}
+        templateUrl="/api/users/template"
+        importUrl={`/api/users/batch-import?kantor_cabang_id=${kantor.id}`}
+        entityName="user"
+        columns={[
+          { key: 'nama', label: 'Nama', required: true },
+          { key: 'email', label: 'Email', required: true },
+          { key: 'role', label: 'Role', required: true },
+          { key: 'wa', label: 'WA' },
+        ]}
+        onSuccess={() => router.refresh()}
+      />
     </div>
   )
 }

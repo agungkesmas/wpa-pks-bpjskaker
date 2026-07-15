@@ -10,11 +10,28 @@ export async function GET(req: NextRequest) {
     
     const { searchParams } = new URL(req.url)
     const user_id = searchParams.get('user_id')
+    const user_ids = searchParams.get('user_ids')  // comma-separated for batch
     const kantor_cabang_id = searchParams.get('kantor_cabang_id')
-    
+
     let users: any[] = []
-    
-    if (user_id) {
+
+    if (user_ids) {
+      // Batch mode: multiple user IDs
+      if (!['super_admin', 'kepala_bidang'].includes(me.role)) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+      const ids = user_ids.split(',').map(s => s.trim()).filter(Boolean)
+      if (ids.length === 0) return NextResponse.json({ error: 'user_ids tidak valid' }, { status: 400 })
+      if (ids.length > 100) return NextResponse.json({ error: 'Maksimal 100 user per print' }, { status: 400 })
+
+      const { data, error } = await supabaseAdmin
+        .from('wpa_users')
+        .select('id, email, full_name, role, phone, nip, temp_password, must_change_password, wpa_kantor_cabang(nama)')
+        .in('id', ids)
+        .order('full_name')
+      if (error) throw error
+      users = data || []
+    } else if (user_id) {
       const { data, error } = await supabaseAdmin
         .from('wpa_users')
         .select('id, email, full_name, role, phone, nip, temp_password, must_change_password, wpa_kantor_cabang(nama)')
@@ -35,7 +52,7 @@ export async function GET(req: NextRequest) {
       if (error) throw error
       users = data || []
     } else {
-      return NextResponse.json({ error: 'user_id atau kantor_cabang_id wajib' }, { status: 400 })
+      return NextResponse.json({ error: 'user_id, user_ids, atau kantor_cabang_id wajib' }, { status: 400 })
     }
     
     if (users.length === 0) return NextResponse.json({ error: 'Tidak ada user' }, { status: 404 })
