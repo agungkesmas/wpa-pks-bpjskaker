@@ -1,5 +1,5 @@
-import { Placeholder } from '@/components/wpa/Placeholder'
+import { DroppingPusatView } from '@/components/wpa/DroppingPusatView'
 
-export default function Page() {
-  return <Placeholder title="Dropping Pusat" description="Progress semua faskes per dropping." />
+export default function Kabid_DroppingPusatPage() {
+  return <DroppingPusatView role="kepala_bidang" />
 }

@@ -10,19 +10,41 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Loader2, Send, Building2, User, Wallet, FileText, Info, Calendar, Plus, RefreshCw } from 'lucide-react'
+import { Loader2, Send, Building2, User, Wallet, FileText, Info, Calendar, Plus, RefreshCw, FileEdit, ArrowRight } from 'lucide-react'
 import { toast } from 'sonner'
+
+type JenisPengajuan =
+  | 'pks_baru'
+  | 'perpanjangan'
+  | 'adendum_harga'
+  | 'adendum_layanan_baru'
+  | 'perubahan_data'
+
+type AdendumSub = 'tarif' | 'layanan_baru' | 'perubahan_data'
 
 export default function AjukanPage() {
   const router = useRouter()
   const params = useSearchParams()
-  const initialJenis = params.get('jenis') || 'pks_baru'
-  
-  const [jenis, setJenis] = useState<'pks_baru' | 'perpanjangan'>(initialJenis as 'pks_baru' | 'perpanjangan')
+  const initialJenis = params.get('jenis') as JenisPengajuan | null
+
+  const [jenis, setJenis] = useState<'pks_baru' | 'perpanjangan' | 'adendum'>(initialJenis === 'perpanjangan' ? 'perpanjangan' : initialJenis === 'pks_baru' ? 'pks_baru' : initialJenis ? 'adendum' : 'pks_baru')
+  const [adendumSub, setAdendumSub] = useState<AdendumSub>(
+    initialJenis === 'adendum_harga' ? 'tarif' :
+    initialJenis === 'adendum_layanan_baru' ? 'layanan_baru' :
+    initialJenis === 'perubahan_data' ? 'perubahan_data' : 'tarif'
+  )
   const [loading, setLoading] = useState(false)
   const [pksList, setPksList] = useState<any[]>([])
   const [selectedPksId, setSelectedPksId] = useState('')
-  
+
+  // Final jenis (computed)
+  const finalJenis: JenisPengajuan =
+    jenis === 'pks_baru' ? 'pks_baru' :
+    jenis === 'perpanjangan' ? 'perpanjangan' :
+    adendumSub === 'tarif' ? 'adendum_harga' :
+    adendumSub === 'layanan_baru' ? 'adendum_layanan_baru' :
+    'perubahan_data'
+
   // Form PKS Baru
   const [pksBaruForm, setPksBaruForm] = useState({
     nama_faskes: '', jenis_faskes: 'RS' as any, tipe_faskes: 'Umum' as any,
@@ -31,19 +53,21 @@ export default function AjukanPage() {
     bank_name: '', bank_cabang: '', bank_rekening_number: '', bank_rekening_name: '',
     catatan: '',
   })
-  
-  // Form Perpanjangan
-  const [perpanjanganForm, setPerpanjanganForm] = useState({
+
+  // Form Adendum
+  const [adendumForm, setAdendumForm] = useState({
+    judul: '',
+    deskripsi_perubahan: '',
+    dokumen_pendukung_url: '',
     catatan: '',
   })
-  
+
+  // Form Perpanjangan
+  const [perpanjanganForm, setPerpanjanganForm] = useState({ catatan: '' })
+
   useEffect(() => {
-    // Fetch PKS aktif untuk perpanjangan
     async function fetchPks() {
       try {
-        const res = await fetch('/api/pipeline/list?initiated_by_me=true')
-        const data = await res.json()
-        // Also fetch PKS aktif
         const pksRes = await fetch('/api/pks/aktif')
         if (pksRes.ok) {
           const pksData = await pksRes.json()
@@ -53,7 +77,7 @@ export default function AjukanPage() {
     }
     fetchPks()
   }, [])
-  
+
   async function handleSubmitPksBaru(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
@@ -73,7 +97,7 @@ export default function AjukanPage() {
       setLoading(false)
     }
   }
-  
+
   async function handleSubmitPerpanjangan(e: React.FormEvent) {
     e.preventDefault()
     if (!selectedPksId) { toast.error('Pilih PKS yang akan diperpanjang'); return }
@@ -94,19 +118,48 @@ export default function AjukanPage() {
       setLoading(false)
     }
   }
-  
+
+  async function handleSubmitAdendum(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+    try {
+      const res = await fetch('/api/adendum/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jenis: finalJenis, ...adendumForm })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      toast.success('Pengajuan adendum berhasil dikirim')
+      router.push('/pic_rs/pengajuan')
+    } catch (e: any) {
+      toast.error(e.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Flow descriptions (with renamed "Kajian Tarif" + "Kredensialing Ulang")
+  const flowDescriptions: Record<JenisPengajuan, string> = {
+    pks_baru: 'Submit form → CM Tinjau → Kredensialing → Kajian Tarif → Drafting PKS → Approval Kabid → Review Legal RS → Tanda Tangan',
+    perpanjangan: 'Ajukan → CM Tinjau → Kredensialing Ulang → Kajian Tarif (conditional) → Drafting PKS (auto-clone) → Approval Kabid → Review Legal RS → Tanda Tangan',
+    adendum_harga: 'Ajukan → CM Tinjau → Kredensialing Ulang → Kajian Tarif → Drafting Adendum → Approval Kabid → Review Legal RS → Tanda Tangan',
+    adendum_layanan_baru: 'Ajukan → CM Tinjau → Kredensialing Ulang → Kajian Tarif → Drafting Adendum → Approval Kabid → Review Legal RS → Tanda Tangan',
+    perubahan_data: 'Ajukan → CM Tinjau → Drafting Adendum (skip Kredensialing Ulang & Kajian Tarif) → Approval Kabid → Review Legal RS → Tanda Tangan',
+  }
+
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Ajukan Pengajuan</h1>
+        <h1 className="text-2xl font-bold text-slate-900">Buat Pengajuan</h1>
         <p className="text-sm text-slate-600">
-          Pilih jenis pengajuan: PKS Baru (faskes baru kerjasama) atau Perpanjangan (PKS akan berakhir).
+          Pilih jenis pengajuan sesuai kebutuhan Anda. Untuk Adendum Dropping Pusat, mohon tunggu CM/Kabid yang akan broadcast ke faskes Anda.
         </p>
       </div>
-      
-      {/* Pilihan Jenis */}
-      <div className="grid grid-cols-2 gap-3">
-        <Card 
+
+      {/* Pilihan Jenis Utama (3 pilihan) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <Card
           className={`cursor-pointer transition-all ${jenis === 'pks_baru' ? 'border-orange-400 bg-orange-50 ring-2 ring-orange-200' : 'border-slate-200 hover:border-slate-300'}`}
           onClick={() => setJenis('pks_baru')}
         >
@@ -116,7 +169,7 @@ export default function AjukanPage() {
             <div className="text-xs text-slate-500 mt-1">Faskes baru kerjasama dengan BPJS</div>
           </CardContent>
         </Card>
-        <Card 
+        <Card
           className={`cursor-pointer transition-all ${jenis === 'perpanjangan' ? 'border-blue-400 bg-blue-50 ring-2 ring-blue-200' : 'border-slate-200 hover:border-slate-300'}`}
           onClick={() => setJenis('perpanjangan')}
         >
@@ -126,18 +179,67 @@ export default function AjukanPage() {
             <div className="text-xs text-slate-500 mt-1">PKS aktif akan berakhir (≤3 bulan)</div>
           </CardContent>
         </Card>
+        <Card
+          className={`cursor-pointer transition-all ${jenis === 'adendum' ? 'border-purple-400 bg-purple-50 ring-2 ring-purple-200' : 'border-slate-200 hover:border-slate-300'}`}
+          onClick={() => setJenis('adendum')}
+        >
+          <CardContent className="p-4 text-center">
+            <FileEdit className={`w-8 h-8 mx-auto mb-2 ${jenis === 'adendum' ? 'text-purple-600' : 'text-slate-400'}`} />
+            <div className="font-semibold text-sm">Adendum</div>
+            <div className="text-xs text-slate-500 mt-1">Ubah tarif, layanan, atau data faskes</div>
+          </CardContent>
+        </Card>
       </div>
-      
+
+      {/* Sub-pilihan Adendum */}
+      {jenis === 'adendum' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Jenis Adendum</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div
+                className={`p-3 rounded border cursor-pointer transition-all ${adendumSub === 'tarif' ? 'border-purple-400 bg-purple-50 ring-2 ring-purple-200' : 'border-slate-200 hover:border-slate-300'}`}
+                onClick={() => setAdendumSub('tarif')}
+              >
+                <div className="font-semibold text-sm mb-1">Tarif</div>
+                <div className="text-xs text-slate-500">Perubahan tarif layanan yang sudah ada</div>
+              </div>
+              <div
+                className={`p-3 rounded border cursor-pointer transition-all ${adendumSub === 'layanan_baru' ? 'border-purple-400 bg-purple-50 ring-2 ring-purple-200' : 'border-slate-200 hover:border-slate-300'}`}
+                onClick={() => setAdendumSub('layanan_baru')}
+              >
+                <div className="font-semibold text-sm mb-1">Layanan Baru</div>
+                <div className="text-xs text-slate-500">Tambah layanan baru (otomatis include tarif baru)</div>
+              </div>
+              <div
+                className={`p-3 rounded border cursor-pointer transition-all ${adendumSub === 'perubahan_data' ? 'border-purple-400 bg-purple-50 ring-2 ring-purple-200' : 'border-slate-200 hover:border-slate-300'}`}
+                onClick={() => setAdendumSub('perubahan_data')}
+              >
+                <div className="font-semibold text-sm mb-1">Perubahan Data</div>
+                <div className="text-xs text-slate-500">Ubah nama, alamat, PJ, atau bank (skip Kajian Tarif)</div>
+              </div>
+            </div>
+            <div className="mt-3 flex items-center gap-2 text-xs text-slate-500">
+              <Info className="w-3 h-3" />
+              <span>Adendum Dropping Pusat (dari kantor pusat BPJS) tidak bisa diajukan oleh faskes — CM/Kabid yang akan broadcast.</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Flow description */}
+      <Alert className="bg-blue-50 border-blue-200">
+        <Info className="w-4 h-4 text-blue-700" />
+        <AlertDescription className="text-blue-900">
+          <strong>Alur {finalJenis.replace(/_/g, ' ')}:</strong> {flowDescriptions[finalJenis]}
+        </AlertDescription>
+      </Alert>
+
       {/* Form PKS Baru */}
       {jenis === 'pks_baru' && (
         <form onSubmit={handleSubmitPksBaru} className="space-y-6">
-          <Alert className="bg-blue-50 border-blue-200">
-            <Info className="w-4 h-4 text-blue-700" />
-            <AlertDescription className="text-blue-900">
-              <strong>Alur PKS Baru:</strong> Submit form → CM review → Kredensialing → Negosiasi Tarif → Drafting PKS → Approval Kabid → Review Legal RS → Tanda Tangan
-            </AlertDescription>
-          </Alert>
-          
           <Card>
             <CardHeader><CardTitle className="text-base flex items-center gap-2"><Building2 className="w-4 h-4 text-orange-600" /> A. Data Faskes</CardTitle></CardHeader>
             <CardContent className="space-y-3">
@@ -184,7 +286,7 @@ export default function AjukanPage() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader><CardTitle className="text-base flex items-center gap-2"><User className="w-4 h-4 text-orange-600" /> B. Penanggung Jawab</CardTitle></CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -193,7 +295,7 @@ export default function AjukanPage() {
               <div><Label>HP/Telepon *</Label><Input value={pksBaruForm.pj_phone} onChange={e => setPksBaruForm(f => ({ ...f, pj_phone: e.target.value }))} placeholder="0812..." required /></div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader><CardTitle className="text-base flex items-center gap-2"><Wallet className="w-4 h-4 text-orange-600" /> C. Data Bank</CardTitle></CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -203,12 +305,12 @@ export default function AjukanPage() {
               <div><Label>Atas Nama</Label><Input value={pksBaruForm.bank_rekening_name} onChange={e => setPksBaruForm(f => ({ ...f, bank_rekening_name: e.target.value }))} /></div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader><CardTitle className="text-base flex items-center gap-2"><FileText className="w-4 h-4 text-orange-600" /> D. Catatan</CardTitle></CardHeader>
             <CardContent><Textarea value={pksBaruForm.catatan} onChange={e => setPksBaruForm(f => ({ ...f, catatan: e.target.value }))} rows={2} placeholder="Catatan untuk CM (opsional)" /></CardContent>
           </Card>
-          
+
           <div className="flex gap-2">
             <Button type="submit" disabled={loading} className="bg-orange-600 hover:bg-orange-700 flex-1">
               {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Mengirim...</> : <><Send className="w-4 h-4 mr-2" /> Kirim Pengajuan</>}
@@ -217,24 +319,17 @@ export default function AjukanPage() {
           </div>
         </form>
       )}
-      
+
       {/* Form Perpanjangan */}
       {jenis === 'perpanjangan' && (
         <form onSubmit={handleSubmitPerpanjangan} className="space-y-6">
-          <Alert className="bg-blue-50 border-blue-200">
-            <Info className="w-4 h-4 text-blue-700" />
-            <AlertDescription className="text-blue-900">
-              <strong>Alur Perpanjangan (8 tahap):</strong> Ajukan → CM Tinjau → Kredensialing Ulang (asesmen mandiri/visitasi) → Tinjauan Tarif (auto-compare) → Drafting PKS (auto-clone data lama) → Approval Kabid → Review Legal RS → Tanda Tangan
-            </AlertDescription>
-          </Alert>
-          
           <Alert className="bg-orange-50 border-orange-200">
             <Calendar className="w-4 h-4 text-orange-700" />
             <AlertDescription className="text-orange-900">
               <strong>Auto-clone:</strong> Data dari PKS lama akan otomatis disalin saat drafting. Anda tidak perlu input ulang data faskes.
             </AlertDescription>
           </Alert>
-          
+
           <Card>
             <CardHeader><CardTitle className="text-base">Pilih PKS yang Akan Diperpanjang</CardTitle></CardHeader>
             <CardContent>
@@ -250,8 +345,8 @@ export default function AjukanPage() {
                     const daysLeft = pks.tanggal_berakhir ? Math.ceil((new Date(pks.tanggal_berakhir).getTime() - Date.now()) / 86400000) : null
                     const isSelected = selectedPksId === pks.id
                     return (
-                      <div 
-                        key={pks.id} 
+                      <div
+                        key={pks.id}
                         className={`p-3 rounded border cursor-pointer transition-all ${isSelected ? 'border-blue-400 bg-blue-50 ring-2 ring-blue-200' : 'border-slate-200 hover:border-slate-300'}`}
                         onClick={() => setSelectedPksId(pks.id)}
                       >
@@ -275,22 +370,93 @@ export default function AjukanPage() {
               )}
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader><CardTitle className="text-base">Catatan (opsional)</CardTitle></CardHeader>
             <CardContent>
-              <Textarea 
-                value={perpanjanganForm.catatan} 
-                onChange={e => setPerpanjanganForm(f => ({ ...f, catatan: e.target.value }))} 
-                rows={3} 
-                placeholder="Contoh: Ada perubahan penanggung jawab, alamat, atau tarif..." 
+              <Textarea
+                value={perpanjanganForm.catatan}
+                onChange={e => setPerpanjanganForm(f => ({ ...f, catatan: e.target.value }))}
+                rows={3}
+                placeholder="Contoh: Ada perubahan penanggung jawab, alamat, atau tarif..."
               />
             </CardContent>
           </Card>
-          
+
           <div className="flex gap-2">
             <Button type="submit" disabled={loading || !selectedPksId} className="bg-blue-700 hover:bg-blue-800 flex-1">
               {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Mengirim...</> : <><Send className="w-4 h-4 mr-2" /> Kirim Pengajuan Perpanjangan</>}
+            </Button>
+            <Button type="button" variant="outline" onClick={() => router.back()}>Batal</Button>
+          </div>
+        </form>
+      )}
+
+      {/* Form Adendum (Tarif / Layanan Baru / Perubahan Data) */}
+      {jenis === 'adendum' && (
+        <form onSubmit={handleSubmitAdendum} className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <FileEdit className="w-4 h-4 text-purple-600" />
+                Detail Adendum {adendumSub === 'tarif' ? 'Tarif' : adendumSub === 'layanan_baru' ? 'Layanan Baru' : 'Perubahan Data'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div>
+                <Label>Judul Pengajuan *</Label>
+                <Input
+                  value={adendumForm.judul}
+                  onChange={e => setAdendumForm(f => ({ ...f, judul: e.target.value }))}
+                  placeholder={
+                    adendumSub === 'tarif' ? 'Contoh: Penyesuaian tarif rawat inap_kelas VIP' :
+                    adendumSub === 'layanan_baru' ? 'Contoh: Penambahan layanan hemodialisa' :
+                    'Contoh: Perubahan alamat faskes'
+                  }
+                  required
+                />
+              </div>
+              <div>
+                <Label>Deskripsi Perubahan *</Label>
+                <Textarea
+                  value={adendumForm.deskripsi_perubahan}
+                  onChange={e => setAdendumForm(f => ({ ...f, deskripsi_perubahan: e.target.value }))}
+                  rows={4}
+                  placeholder={
+                    adendumSub === 'tarif' ? 'Jelaskan tarif lama, tarif baru, dan alasannya (cost trend, inflasi, dll)...' :
+                    adendumSub === 'layanan_baru' ? 'Jelaskan layanan baru yang diajukan + tarif usulan...' :
+                    'Jelaskan perubahan data: field lama → field baru + alasan...'
+                  }
+                  required
+                />
+              </div>
+              <div>
+                <Label>Dokumen Pendukung (URL)</Label>
+                <Input
+                  value={adendumForm.dokumen_pendukung_url}
+                  onChange={e => setAdendumForm(f => ({ ...f, dokumen_pendukung_url: e.target.value }))}
+                  placeholder="URL ke dokumen pendukung (opsional)"
+                />
+                <p className="text-xs text-slate-500 mt-1">Surat permohonan resmi, rincian tarif, SK, dll.</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader><CardTitle className="text-base">Catatan untuk CM</CardTitle></CardHeader>
+            <CardContent>
+              <Textarea
+                value={adendumForm.catatan}
+                onChange={e => setAdendumForm(f => ({ ...f, catatan: e.target.value }))}
+                rows={2}
+                placeholder="Catatan tambahan untuk Case Manager (opsional)"
+              />
+            </CardContent>
+          </Card>
+
+          <div className="flex gap-2">
+            <Button type="submit" disabled={loading} className="bg-purple-600 hover:bg-purple-700 flex-1">
+              {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Mengirim...</> : <><Send className="w-4 h-4 mr-2" /> Kirim Pengajuan Adendum</>}
             </Button>
             <Button type="button" variant="outline" onClick={() => router.back()}>Batal</Button>
           </div>

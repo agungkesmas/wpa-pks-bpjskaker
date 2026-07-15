@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Loader2, Building2, Clock, AlertCircle, ChevronRight, Unlock, Lock, Info, User } from 'lucide-react'
 import { toast } from 'sonner'
+import { TAHAP_LABELS } from '@/lib/wpa-constants'
 
 interface Pipeline {
   id: string
@@ -19,18 +20,6 @@ interface Pipeline {
   takeover_enabled: boolean
   current_handler_id: string | null
   wpa_faskes: { nama: string; jenis: string; kota: string } | null
-}
-
-const TAHAP_LABELS: Record<string, string> = {
-  diajukan: 'Pengajuan',
-  ditinjau: 'Peninjauan',
-  kredensialing: 'Kredensialing',
-  negosiasi_tarif: 'Negosiasi Tarif',
-  drafting_pks: 'Drafting PKS',
-  drafting_adendum: 'Drafting Adendum',
-  approval_kabid: 'Approval Kabid',
-  review_legal_rs: 'Review Legal RS',
-  tanda_tangan: 'Tanda Tangan',
 }
 
 interface Props {

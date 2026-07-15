@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getSession, logAudit } from '@/lib/auth'
 import { z } from 'zod'
+import { TAHAP_FLOW, SKIPPABLE_TAHAPS } from '@/lib/wpa-constants'
 
 const schema = z.object({
   pipeline_id: z.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
@@ -9,55 +10,8 @@ const schema = z.object({
   catatan: z.string().optional().or(z.literal('')),
 })
 
-// Tahap transition rules per jenis pipeline
-const TAHAP_FLOW: Record<string, { current: string; next: string; handler_role: string }[]> = {
-  pks_baru: [
-    { current: 'diajukan', next: 'ditinjau', handler_role: 'case_manager' },
-    { current: 'ditinjau', next: 'kredensialing', handler_role: 'case_manager' },
-    { current: 'kredensialing', next: 'negosiasi_tarif', handler_role: 'case_manager' },
-    { current: 'negosiasi_tarif', next: 'drafting_pks', handler_role: 'case_manager' },
-    { current: 'drafting_pks', next: 'approval_kabid', handler_role: 'kepala_bidang' },
-    { current: 'approval_kabid', next: 'review_legal_rs', handler_role: 'legal_rs' },
-    { current: 'review_legal_rs', next: 'tanda_tangan', handler_role: 'kepala_bidang' },
-    { current: 'tanda_tangan', next: '__complete__', handler_role: 'kepala_bidang' },
-  ],
-  perpanjangan: [
-    { current: 'diajukan', next: 'ditinjau', handler_role: 'case_manager' },
-    { current: 'ditinjau', next: 'kredensialing_ulang', handler_role: 'case_manager' },
-    { current: 'kredensialing_ulang', next: 'tinjauan_tarif', handler_role: 'case_manager' },
-    { current: 'tinjauan_tarif', next: 'drafting_pks', handler_role: 'case_manager' },
-    { current: 'drafting_pks', next: 'approval_kabid', handler_role: 'kepala_bidang' },
-    { current: 'approval_kabid', next: 'review_legal_rs', handler_role: 'legal_rs' },
-    { current: 'review_legal_rs', next: 'tanda_tangan', handler_role: 'kepala_bidang' },
-    { current: 'tanda_tangan', next: '__complete__', handler_role: 'kepala_bidang' },
-  ],
-  adendum_harga: [
-    { current: 'diajukan', next: 'ditinjau', handler_role: 'case_manager' },
-    { current: 'ditinjau', next: 'negosiasi_tarif', handler_role: 'case_manager' },
-    { current: 'negosiasi_tarif', next: 'drafting_adendum', handler_role: 'case_manager' },
-    { current: 'drafting_adendum', next: 'approval_kabid', handler_role: 'kepala_bidang' },
-    { current: 'approval_kabid', next: 'review_legal_rs', handler_role: 'legal_rs' },
-    { current: 'review_legal_rs', next: 'tanda_tangan', handler_role: 'kepala_bidang' },
-    { current: 'tanda_tangan', next: '__complete__', handler_role: 'kepala_bidang' },
-  ],
-  adendum_dropping: [
-    { current: 'drafting_adendum', next: 'approval_kabid', handler_role: 'kepala_bidang' },
-    { current: 'approval_kabid', next: 'review_legal_rs', handler_role: 'legal_rs' },
-    { current: 'review_legal_rs', next: 'tanda_tangan', handler_role: 'kepala_bidang' },
-    { current: 'tanda_tangan', next: '__complete__', handler_role: 'kepala_bidang' },
-  ],
-  perubahan_data: [
-    { current: 'diajukan', next: 'ditinjau', handler_role: 'case_manager' },
-    { current: 'ditinjau', next: 'drafting_adendum', handler_role: 'case_manager' },
-    { current: 'drafting_adendum', next: 'approval_kabid', handler_role: 'kepala_bidang' },
-    { current: 'approval_kabid', next: 'review_legal_rs', handler_role: 'legal_rs' },
-    { current: 'review_legal_rs', next: 'tanda_tangan', handler_role: 'kepala_bidang' },
-    { current: 'tanda_tangan', next: '__complete__', handler_role: 'kepala_bidang' },
-  ],
-}
-
-// Tahap yang bisa di-skip (conditional)
-const SKIPPABLE_TAHAPS = ['negosiasi_tarif']
+// TAHAP_FLOW & SKIPPABLE_TAHAPS imported from @/lib/wpa-constants
+// (single source of truth — keeps transition route & UI labels in sync)
 
 export async function POST(req: NextRequest) {
   try {

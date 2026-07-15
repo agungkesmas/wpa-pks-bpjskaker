@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Loader2, Clock, CheckCircle2, Circle, AlertCircle, ArrowLeft, Building2, Calendar } from 'lucide-react'
 import Link from 'next/link'
+import { TAHAP_LABELS } from '@/lib/wpa-constants'
 
 interface Pipeline {
   id: string
@@ -24,18 +25,6 @@ interface Pipeline {
   tahap_config: any[]
   documents: any[]
   access_logs: any[]
-}
-
-const TAHAP_LABELS: Record<string, string> = {
-  diajukan: 'Pengajuan',
-  ditinjau: 'Peninjauan Surat',
-  kredensialing: 'Kredensialing',
-  negosiasi_tarif: 'Negosiasi Tarif',
-  drafting_pks: 'Drafting PKS',
-  drafting_adendum: 'Drafting Adendum',
-  approval_kabid: 'Approval Kabid',
-  review_legal_rs: 'Review Legal RS',
-  tanda_tangan: 'Tanda Tangan',
 }
 
 const TAHAP_COLORS: Record<string, string> = {

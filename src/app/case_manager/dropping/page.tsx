@@ -1,5 +1,5 @@
-import { Placeholder } from '@/components/wpa/Placeholder'
+import { DroppingPusatView } from '@/components/wpa/DroppingPusatView'
 
-export default function Page() {
-  return <Placeholder title="Dropping Pusat" description="Adendum wajib dari kantor pusat + deadline." />
+export default function CM_DroppingPusatPage() {
+  return <DroppingPusatView role="case_manager" />
 }

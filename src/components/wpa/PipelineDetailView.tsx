@@ -14,6 +14,7 @@ import {
   ArrowRight, ArrowLeft as ArrowLeftIcon, XCircle, Hand, User, Calendar, FileText
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { TAHAP_LABELS } from '@/lib/wpa-constants'
 
 interface PipelineData {
   id: string
@@ -31,21 +32,6 @@ interface PipelineData {
   wpa_kantor_cabang: { nama: string; kode: string } | null
   logs: any[]
   tahap_config: any[]
-}
-
-const TAHAP_LABELS: Record<string, string> = {
-  diajukan: 'Pengajuan',
-  ditinjau: 'Peninjauan Surat',
-  kredensialing: 'Kredensialing',
-  kredensialing_ulang: 'Kredensialing Ulang',
-  negosiasi_tarif: 'Negosiasi Tarif',
-  tinjauan_tarif: 'Tinjauan Tarif',
-  drafting_pks: 'Drafting PKS',
-  drafting_adendum: 'Drafting Adendum',
-  approval_kabid: 'Approval Kabid',
-  review_legal_rs: 'Review Legal RS',
-  tanda_tangan: 'Tanda Tangan',
-  completed: 'Selesai',
 }
 
 interface Props {

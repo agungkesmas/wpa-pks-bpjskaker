@@ -7,7 +7,7 @@ import {
   LayoutDashboard, FileSignature, Building2, Users, Settings, 
   LogOut, Menu, X, Bell, Calendar, BarChart3, 
   FileText, ListChecks, Wallet, ChevronRight, ShieldCheck,
-  Inbox, Plus, Briefcase, FolderOpen
+  Inbox, Plus, Briefcase, FolderOpen, FileEdit
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -53,18 +53,20 @@ const ROLE_NAV: Record<UserRole, { href: string; label: string; icon: any }[]> =
     { href: '/super_admin/pengajuan', label: 'Pengajuan', icon: Inbox },
     { href: '/super_admin/audit', label: 'Audit Log', icon: ListChecks },
   ],
-  // Kepala Bidang (5 menu — gabung Pengajuan ke Tugas Cabang)
+  // Kepala Bidang (6 menu — tambah Dropping Pusat)
   kepala_bidang: [
     { href: '/kepala_bidang', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/kepala_bidang/approval', label: 'Approval', icon: ShieldCheck },
+    { href: '/kepala_bidang/dropping', label: 'Dropping Pusat', icon: FileEdit },
     { href: '/kepala_bidang/dokumen', label: 'Dokumen Legal', icon: FileSignature },
     { href: '/kepala_bidang/tugas', label: 'Tugas Cabang', icon: Briefcase },
     { href: '/kepala_bidang/laporan', label: 'Laporan', icon: BarChart3 },
   ],
-  // Case Manager (5 menu — tambah Dokumen Operasional)
+  // Case Manager (6 menu — tambah Dropping Pusat)
   case_manager: [
     { href: '/case_manager', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/case_manager/tugas', label: 'Tugas Saya', icon: Briefcase },
+    { href: '/case_manager/dropping', label: 'Dropping Pusat', icon: FileEdit },
     { href: '/case_manager/faskes', label: 'Faskes Mitra', icon: Building2 },
     { href: '/case_manager/dokumen-operasional', label: 'Dokumen Operasional', icon: FileText },
     { href: '/case_manager/tarif', label: 'Bank Tarif', icon: Wallet },
@@ -79,7 +81,7 @@ const ROLE_NAV: Record<UserRole, { href: string; label: string; icon: any }[]> =
   // PIC RS (5 menu)
   pic_rs: [
     { href: '/pic_rs', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/pic_rs/ajukan-baru', label: 'Ajukan Pengajuan', icon: Plus },
+    { href: '/pic_rs/ajukan-baru', label: 'Buat Pengajuan', icon: Plus },
     { href: '/pic_rs/pengajuan', label: 'Pengajuan Saya', icon: Inbox },
     { href: '/pic_rs/dokumen', label: 'Dokumen Saya', icon: FileSignature },
     { href: '/pic_rs/tarif', label: 'Bank Tarif', icon: Wallet },

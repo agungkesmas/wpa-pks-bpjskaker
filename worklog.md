@@ -1180,3 +1180,99 @@ Stage Summary:
 - ✅ Production: https://mitra-plkk.vercel.app (URL lama dimatikan total)
 - ⏳ User akan fokus berbenah (testing + feedback)
 - ⏳ Fase 6: Pembinaan & Sosialisasi (PP lapor → CM decision → SP/visitasi/sosialisasi)
+
+---
+Task ID: FASE5.5-REFACTOR
+Agent: main
+Task: Rename negosiasi_tarif → tinjauan_tarif (label "Kajian Tarif") + tambah kredensialing_ulang di adendum + buat halaman "Buat Pengajuan" PIC RS (3 pilihan + sub-adendum) + implementasi Dropping Pusat Hybrid.
+
+Work Log:
+- Eksplorasi: temukan `negosiasi_tarif` di 4 file view (TugasSayaView, TugasCabangView, PipelineDetailView, pic_rs/pengajuan) + transition route + SQL seed. TAHAP_LABELS duplicated 4x dengan inkonsistensi.
+- Buat shared constants `src/lib/wpa-constants.ts`: TAHAP_LABELS (single source of truth), JENIS_PENGAJUAN_LABELS, TAHAP_FLOW per jenis, SKIPPABLE_TAHAPS, TAHAP_CONFIG_SEED.
+- Refaktor transition route (`/api/pipeline/transition/route.ts`) → import TAHAP_FLOW dari shared constants (hapus duplikasi).
+- Refaktor 4 view files → import TAHAP_LABELS dari shared constants (hapus duplikasi).
+- Rename `negosiasi_tarif` → `tinjauan_tarif` (label "Kajian Tarif") di:
+  - TAHAP_FLOW pks_baru (kredensialing → tinjauan_tarif → drafting_pks)
+  - TAHAP_FLOW adendum_harga (ditinjau → kredensialing_ulang → tinjauan_tarif → drafting_adendum) ← NEW
+  - SQL seed wpa_pipeline_tahap_config (on conflict do update, bukan do nothing)
+  - Cleanup: delete row lama dengan tahap='negosiasi_tarif'
+- Tambah `kredensialing_ulang` ke flow adendum_harga (sebelumnya: ditinjau → tinjauan_tarif, sekarang: ditinjau → kredensialing_ulang → tinjauan_tarif). Alasan: adendum tarif butuh verifikasi ulang kredensial + dokumen pendukung tarif.
+- Tambah jenis baru `adendum_layanan_baru` (8 tahap, same shape as adendum_harga).
+- Refaktor halaman "Buat Pengajuan" PIC RS (`/pic_rs/ajukan-baru/page.tsx`):
+  - 3 pilihan utama: PKS Baru / Perpanjangan / Adendum
+  - Sub-pilihan Adendum: Tarif / Layanan Baru / Perubahan Data
+  - Note: Dropping Pusat tidak bisa diajukan PIC RS (CM/Kabid yang broadcast)
+  - Form Adendum: judul, deskripsi perubahan, dokumen pendukung URL, catatan
+  - POST ke `/api/adendum/create` (baru)
+- Buat API endpoint `/api/adendum/create/route.ts`:
+  - Validate PIC RS + faskes_id + has active PKS
+  - Check no in-progress adendum of same jenis
+  - Create pipeline (current_tahap='ditinjau', auto-skip 'diajukan')
+  - Insert 3 pipeline logs (enter diajukan, complete diajukan → ditinjau, enter ditinjau)
+  - Insert submit log with metadata (judul, deskripsi, dokumen_pendukung_url)
+  - Notify CM
+  - Audit log
+- Implementasi Dropping Pusat Hybrid (sesuai rekomendasi user):
+  - Buat tabel `wpa_dropping_pusat_batch` (header: no_surat_pusat, tanggal, perihal, surat_acuan_url, total_diproses, total_dikecualikan)
+  - Buat tabel `wpa_dropping_pusat_exclude` (faskes_id, alasan_exclude wajib, excluded_by, excluded_at) — audit trail
+  - Add column `wpa_pipeline.dropping_batch_id` (link pipeline → batch)
+  - Add 'adendum_layanan_baru' to wpa_pipeline.jenis check constraint
+  - Migration: rename negosiasi_tarif → tinjauan_tarif in wpa_pipeline.current_tahap + wpa_pipeline_log (tahap, from_tahap, to_tahap) untuk data in-flight
+- Buat API endpoint `/api/dropping-pusat/faskes-list/route.ts`:
+  - GET list faskes ber-PKS aktif (status='ditandatangani') di cabang CM/Kabid
+  - Return: id, nama, jenis, tipe, kota, pks_id, pks_kode, pks_berakhir
+- Buat API endpoint `/api/dropping-pusat/create/route.ts`:
+  - Validate: CM/Kabid/SuperAdmin, kantor_cabang_id, minimal 1 faskes selected
+  - Validate: setiap exclusion wajib alasan ≥ 5 chars
+  - Insert batch header
+  - Insert exclusion records (dengan alasan)
+  - Bulk insert pipelines (1 per selected faskes, current_tahap='drafting_adendum', handler=me)
+  - Insert pipeline logs (enter drafting_adendum)
+  - Notify PIC RS per faskes (type='dropping_pusat_received')
+  - Audit log
+- Buat komponen `DroppingPusatView.tsx` (shared CM + Kabid):
+  - Form batch: no_surat_pusat, tanggal_surat_pusat, perihal, surat_acuan_url, catatan
+  - List faskes dengan Hybrid UI:
+    - Default semua checked = true (fail-safe)
+    - Uncheck → modal popup untuk isi alasan (wajib ≥ 5 chars)
+    - Filter by jenis (RS/Klinik/Puskesmas/PraktikMandiri) + search by nama/kota
+    - Tombol "Pilih Semua" + "Batal Pilih (filtered)"
+    - Summary: X akan diproses, Y dikecualikan
+  - Success modal: show total_diproses + total_dikecualikan
+- Update halaman `/case_manager/dropping/page.tsx` + `/kepala_bidang/dropping/page.tsx` → gunakan DroppingPusatView.
+- Update RoleShell menu:
+  - Case Manager: tambah "Dropping Pusat" (icon FileEdit) — sekarang 6 menu
+  - Kepala Bidang: tambah "Dropping Pusat" — sekarang 6 menu
+  - PIC RS: rename menu "Ajukan Pengajuan" → "Buat Pengajuan"
+- Import `FileEdit` dari lucide-react di RoleShell.
+
+Stage Summary:
+- File baru (5):
+  - `src/lib/wpa-constants.ts` (shared constants — single source of truth)
+  - `src/components/wpa/DroppingPusatView.tsx` (UI Hybrid)
+  - `src/app/api/adendum/create/route.ts`
+  - `src/app/api/dropping-pusat/faskes-list/route.ts`
+  - `src/app/api/dropping-pusat/create/route.ts`
+  - `scripts/wpa_dropping_pusat_v2_schema.sql` (migration)
+- File update (9):
+  - `src/app/api/pipeline/transition/route.ts` (import shared constants)
+  - `src/components/wpa/PipelineDetailView.tsx` (import shared TAHAP_LABELS)
+  - `src/components/wpa/TugasSayaView.tsx` (import shared TAHAP_LABELS)
+  - `src/components/wpa/TugasCabangView.tsx` (import shared TAHAP_LABELS)
+  - `src/app/pic_rs/pengajuan/page.tsx` (import shared TAHAP_LABELS)
+  - `src/app/pic_rs/ajukan-baru/page.tsx` (3 pilihan + sub-adendum)
+  - `src/components/wpa/RoleShell.tsx` (menu update + import FileEdit)
+  - `src/app/case_manager/dropping/page.tsx` (use DroppingPusatView)
+  - `src/app/kepala_bidang/dropping/page.tsx` (use DroppingPusatView)
+  - `scripts/wpa_plkk_final_schema.sql` (rename + add kredensialing_ulang + adendum_layanan_baru)
+- Tahap final (per jenis):
+  - pks_baru: 8 tahap (diajukan → ditinjau → kredensialing → tinjauan_tarif → drafting_pks → approval_kabid → review_legal_rs → tanda_tangan)
+  - perpanjangan: 8 tahap (diajukan → ditinjau → kredensialing_ulang → tinjauan_tarif [conditional] → drafting_pks → approval_kabid → review_legal_rs → tanda_tangan)
+  - adendum_harga: 8 tahap (diajukan → ditinjau → kredensialing_ulang → tinjauan_tarif → drafting_adendum → approval_kabid → review_legal_rs → tanda_tangan)
+  - adendum_layanan_baru: 8 tahap (same shape as adendum_harga)
+  - adendum_dropping: 4 tahap (drafting_adendum → approval_kabid → review_legal_rs → tanda_tangan) — initiated by CM/Kabid
+  - perubahan_data: 6 tahap (skip kredensialing_ulang & tinjauan_tarif)
+- ⚠️ MIGRATION WAJIB JALANKAN di Supabase Studio:
+  1. Run `scripts/wpa_plkk_final_schema.sql` (re-seed tahap config, rename negosiasi_tarif → tinjauan_tarif)
+  2. Run `scripts/wpa_dropping_pusat_v2_schema.sql` (create wpa_dropping_pusat_batch + wpa_dropping_pusat_exclude, add adendum_layanan_baru to jenis check, migrate in-flight pipelines)
+- Type-check: ✅ semua file baru bersih (0 error). 1 error pre-existing di RoleShell.tsx(218) terkait type narrowing super_admin — bukan dari perubahan ini.
