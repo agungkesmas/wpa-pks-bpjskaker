@@ -1,5 +1,2 @@
-import { Placeholder } from '@/components/wpa/Placeholder'
-
-export default function Page() {
-  return <Placeholder title="Pengajuan" description="Monitoring semua pipeline di cabang." />
-}
+import { redirect } from 'next/navigation'
+export default function Page() { redirect('/kepala_bidang/tugas') }

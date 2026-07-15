@@ -1,5 +1,2 @@
-import { TugasCabangView } from '@/components/wpa/TugasCabangView'
-
-export default function CMTugasCabangPage() {
-  return <TugasCabangView role="case_manager" />
-}
+import { redirect } from 'next/navigation'
+export default function Page() { redirect('/case_manager/tugas') }

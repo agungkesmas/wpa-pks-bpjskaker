@@ -53,28 +53,25 @@ const ROLE_NAV: Record<UserRole, { href: string; label: string; icon: any }[]> =
     { href: '/super_admin/pengajuan', label: 'Pengajuan', icon: Inbox },
     { href: '/super_admin/audit', label: 'Audit Log', icon: ListChecks },
   ],
-  // Kepala Bidang (6 menu)
+  // Kepala Bidang (5 menu — gabung Pengajuan ke Tugas Cabang)
   kepala_bidang: [
     { href: '/kepala_bidang', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/kepala_bidang/approval', label: 'Approval', icon: ShieldCheck },
     { href: '/kepala_bidang/dokumen', label: 'Dokumen Legal', icon: FileSignature },
     { href: '/kepala_bidang/tugas', label: 'Tugas Cabang', icon: Briefcase },
-    { href: '/kepala_bidang/pengajuan', label: 'Pengajuan', icon: Inbox },
     { href: '/kepala_bidang/laporan', label: 'Laporan', icon: BarChart3 },
   ],
-  // Case Manager (5 menu)
+  // Case Manager (4 menu — gabung Tugas Saya + Tugas Cabang)
   case_manager: [
     { href: '/case_manager', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/case_manager/tugas', label: 'Tugas Saya', icon: Briefcase },
-    { href: '/case_manager/tugas-cabang', label: 'Tugas Cabang', icon: ListChecks },
     { href: '/case_manager/faskes', label: 'Faskes Mitra', icon: Building2 },
     { href: '/case_manager/tarif', label: 'Bank Tarif', icon: Wallet },
   ],
-  // Penata Pelayanan (4 menu)
+  // Penata Pelayanan (3 menu — gabung Tugas Saya + Tugas Cabang)
   penata_pelayanan: [
     { href: '/penata_pelayanan', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/penata_pelayanan/tugas', label: 'Tugas Saya', icon: Briefcase },
-    { href: '/penata_pelayanan/tugas-cabang', label: 'Tugas Cabang', icon: ListChecks },
     { href: '/penata_pelayanan/faskes', label: 'Faskes Mitra', icon: Building2 },
   ],
   // PIC RS (5 menu) — tambah "Ajukan PKS Baru"

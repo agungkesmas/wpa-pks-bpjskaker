@@ -1,5 +1,2 @@
-import { TugasCabangView } from '@/components/wpa/TugasCabangView'
-
-export default function PPTugasCabangPage() {
-  return <TugasCabangView role="penata_pelayanan" />
-}
+import { redirect } from 'next/navigation'
+export default function Page() { redirect('/penata_pelayanan/tugas') }

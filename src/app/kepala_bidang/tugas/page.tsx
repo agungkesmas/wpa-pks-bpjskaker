@@ -1,5 +1,8 @@
-import { TugasCabangView } from '@/components/wpa/TugasCabangView'
+import { getSession } from '@/lib/auth'
+import { TugasSayaView } from '@/components/wpa/TugasSayaView'
 
-export default function KabidTugasPage() {
-  return <TugasCabangView role="kepala_bidang" />
+export default async function KabidTugasPage() {
+  const me = await getSession()
+  if (!me) return null
+  return <TugasSayaView role="kepala_bidang" currentUserId={me.id} />
 }
