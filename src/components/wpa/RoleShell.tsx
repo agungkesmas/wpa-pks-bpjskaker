@@ -61,18 +61,20 @@ const ROLE_NAV: Record<UserRole, { href: string; label: string; icon: any }[]> =
     { href: '/kepala_bidang/tugas', label: 'Tugas Cabang', icon: Briefcase },
     { href: '/kepala_bidang/laporan', label: 'Laporan', icon: BarChart3 },
   ],
-  // Case Manager (4 menu — gabung Tugas Saya + Tugas Cabang)
+  // Case Manager (5 menu — tambah Dokumen Operasional)
   case_manager: [
     { href: '/case_manager', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/case_manager/tugas', label: 'Tugas Saya', icon: Briefcase },
     { href: '/case_manager/faskes', label: 'Faskes Mitra', icon: Building2 },
+    { href: '/case_manager/dokumen-operasional', label: 'Dokumen Operasional', icon: FileText },
     { href: '/case_manager/tarif', label: 'Bank Tarif', icon: Wallet },
   ],
-  // Penata Pelayanan (3 menu — gabung Tugas Saya + Tugas Cabang)
+  // Penata Pelayanan (4 menu — tambah Dokumen Operasional)
   penata_pelayanan: [
     { href: '/penata_pelayanan', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/penata_pelayanan/tugas', label: 'Tugas Saya', icon: Briefcase },
     { href: '/penata_pelayanan/faskes', label: 'Faskes Mitra', icon: Building2 },
+    { href: '/penata_pelayanan/dokumen-operasional', label: 'Dokumen Operasional', icon: FileText },
   ],
   // PIC RS (5 menu) — tambah "Ajukan PKS Baru"
   pic_rs: [
