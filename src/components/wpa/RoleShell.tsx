@@ -76,10 +76,10 @@ const ROLE_NAV: Record<UserRole, { href: string; label: string; icon: any }[]> =
     { href: '/penata_pelayanan/faskes', label: 'Faskes Mitra', icon: Building2 },
     { href: '/penata_pelayanan/dokumen-operasional', label: 'Dokumen Operasional', icon: FileText },
   ],
-  // PIC RS (5 menu) — tambah "Ajukan PKS Baru"
+  // PIC RS (5 menu)
   pic_rs: [
     { href: '/pic_rs', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/pic_rs/ajukan-baru', label: 'Ajukan PKS Baru', icon: Plus },
+    { href: '/pic_rs/ajukan-baru', label: 'Ajukan Pengajuan', icon: Plus },
     { href: '/pic_rs/pengajuan', label: 'Pengajuan Saya', icon: Inbox },
     { href: '/pic_rs/dokumen', label: 'Dokumen Saya', icon: FileSignature },
     { href: '/pic_rs/tarif', label: 'Bank Tarif', icon: Wallet },
