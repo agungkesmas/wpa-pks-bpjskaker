@@ -54,13 +54,33 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         .eq('pipeline_id', id).order('performed_at', { ascending: true }),
     ])
     
-    return NextResponse.json({ 
+    // Fetch placeholder values + template (untuk adendum_masal)
+    let placeholderValues: any[] = []
+    let templateInfo: any = null
+    if (pipeline.jenis === 'adendum_masal' && pipeline.template_id) {
+      const [phRes, tplRes] = await Promise.all([
+        supabaseAdmin.from('wpa_pipeline_placeholder_values')
+          .select('placeholder_key, placeholder_value, placeholder_label')
+          .eq('pipeline_id', id),
+        supabaseAdmin.from('wpa_pks_template')
+          .select('id, nama, judul_kartu, kode, version')
+          .eq('id', pipeline.template_id)
+          .maybeSingle(),
+      ])
+      placeholderValues = phRes.data || []
+      templateInfo = tplRes.data
+    }
+
+    return NextResponse.json({
       data: {
         ...pipeline,
         logs: logsRes.data || [],
         tahap_config: tahapRes.data || [],
         documents: docsRes.data || [],
+        wpa_pengajuan_dokumen: docsRes.data || [],  // alias for PipelineDetailView
         access_logs: aclRes.data || [],
+        wpa_pipeline_placeholder_values: placeholderValues,
+        wpa_pks_template: templateInfo,
       }
     })
   } catch (e: any) {

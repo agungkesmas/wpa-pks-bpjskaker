@@ -118,15 +118,14 @@ export async function POST(req: NextRequest) {
 
     await logAudit({
       user_id: me.id,
-      kantor_cabang_id: me.kantor_cabang_id,
+      kantor_cabang_id: me.kantor_cabang_id || undefined,
       action: 'pengajuan_dokumen_upload',
       entity_type: 'pengajuan_dokumen',
       entity_id: doc.id,
-      after_data: { pipeline_id: pipelineId, jenis, file_name: file.name, file_size: file.size },
+      after_data: { pipeline_id: pipelineId || null, jenis, file_name: file.name, file_size: file.size },
       ip: req.headers.get('x-forwarded-for') || undefined,
       user_agent: req.headers.get('user-agent') || undefined,
     })
-
     return NextResponse.json({
       success: true,
       data: doc,

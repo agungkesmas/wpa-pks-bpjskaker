@@ -42,7 +42,8 @@ export async function POST(req: NextRequest) {
     // For perpanjangan/adendum, require pks_id (active PKS)
     let pksId = data.pks_id || null
     let kantorCabangId: string | null = null
-    if (data.jenis !== 'pks_baru') {
+    // Always require active PKS for non-pks_baru (this endpoint only handles non-pks_baru anyway)
+    {
       const { data: pks } = await supabaseAdmin
         .from('wpa_pks')
         .select('id, kode_pks_pihak_pertama, status, faskes_id, kantor_cabang_id')

@@ -32,6 +32,9 @@ interface PipelineData {
   wpa_kantor_cabang: { nama: string; kode: string } | null
   logs: any[]
   tahap_config: any[]
+  wpa_pengajuan_dokumen?: any[]
+  wpa_pipeline_placeholder_values?: any[]
+  wpa_pks_template?: any
 }
 
 interface Props {
@@ -205,7 +208,60 @@ export function PipelineDetailView({ role, currentUserId }: Props) {
       {pipeline && (pipeline.current_tahap === 'drafting_pks' || pipeline.current_tahap === 'drafting_adendum') && (isHandler || role === 'super_admin') && (
         <DraftingPKSView pipelineId={pipeline.id} onGenerated={() => {}} />
       )}
-      
+
+      {/* Dokumen yang diupload */}
+      {pipeline.wpa_pengajuan_dokumen && pipeline.wpa_pengajuan_dokumen.length > 0 && (
+        <Card>
+          <CardHeader><CardTitle className="text-base">Dokumen Pengajuan ({pipeline.wpa_pengajuan_dokumen.length})</CardTitle></CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {pipeline.wpa_pengajuan_dokumen.map((doc: any) => (
+                <div key={doc.id} className="flex items-center justify-between p-2 rounded border border-slate-200">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium truncate">{doc.file_name}</div>
+                    <div className="text-xs text-slate-500">
+                      {doc.jenis.replace(/_/g, ' ')} · {doc.file_size ? `${(doc.file_size / 1024).toFixed(1)} KB` : '-'}
+                      {doc.uploaded_at && ` · ${new Date(doc.uploaded_at).toLocaleDateString('id-ID')}`}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {doc.verified ? (
+                      <Badge className="bg-green-100 text-green-800 text-[10px]">Terverifikasi</Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-[10px]">Belum Diverifikasi</Badge>
+                    )}
+                    <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
+                      <Button size="sm" variant="ghost">Lihat</Button>
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Placeholder values (untuk adendum_masal) */}
+      {pipeline.wpa_pipeline_placeholder_values && pipeline.wpa_pipeline_placeholder_values.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              Isian Placeholder {pipeline.wpa_pks_template?.judul_kartu ? `— ${pipeline.wpa_pks_template.judul_kartu}` : ''}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="border border-slate-200 rounded divide-y divide-slate-100">
+              {pipeline.wpa_pipeline_placeholder_values.map((ph: any, i: number) => (
+                <div key={i} className="flex justify-between p-2 text-sm">
+                  <span className="text-slate-600">{ph.placeholder_label || ph.placeholder_key}</span>
+                  <strong className="ml-2 text-right">{ph.placeholder_value || '-'}</strong>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Tracking tahap */}
       <Card>
         <CardHeader><CardTitle className="text-base">Tracking Tahap</CardTitle></CardHeader>

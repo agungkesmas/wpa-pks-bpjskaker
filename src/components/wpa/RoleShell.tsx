@@ -62,10 +62,12 @@ const ROLE_NAV: Record<UserRole, { href: string; label: string; icon: any }[]> =
     { href: '/kepala_bidang/tugas', label: 'Tugas Cabang', icon: Briefcase },
     { href: '/kepala_bidang/laporan', label: 'Laporan', icon: BarChart3 },
   ],
-  // Case Manager (6 menu — tambah Dropping Pusat)
+  // Case Manager (7 menu — tambah Adendum Masal)
   case_manager: [
     { href: '/case_manager', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/case_manager/tugas', label: 'Tugas Saya', icon: Briefcase },
+    { href: '/case_manager/pks-baru', label: 'PKS Baru', icon: Plus },
+    { href: '/case_manager/adendum-masal', label: 'Adendum Masal', icon: FileEdit },
     { href: '/case_manager/dropping', label: 'Dropping Pusat', icon: FileEdit },
     { href: '/case_manager/faskes', label: 'Faskes Mitra', icon: Building2 },
     { href: '/case_manager/dokumen-operasional', label: 'Dokumen Operasional', icon: FileText },

@@ -30,6 +30,8 @@ interface Template {
   placeholders: any
   is_active: boolean
   is_locked: boolean
+  is_masal: boolean
+  judul_kartu: string | null
   file_docx_url: string | null
   uploaded_by: string | null
   uploaded_at: string
@@ -69,6 +71,8 @@ export function TemplateManager({ templates: initialTemplates }: { templates: Te
     nama: '',
     jenis_dokumen: 'pks',
     versi: '1.0',
+    is_masal: false,
+    judul_kartu: '',
     file: null as File | null,
   })
   
@@ -87,6 +91,8 @@ export function TemplateManager({ templates: initialTemplates }: { templates: Te
       fd.append('nama', form.nama)
       fd.append('jenis_dokumen', form.jenis_dokumen)
       fd.append('versi', form.versi)
+      fd.append('is_masal', form.is_masal ? 'true' : 'false')
+      fd.append('judul_kartu', form.judul_kartu)
       
       const res = await fetch('/api/template/upload', {
         method: 'POST',
@@ -98,7 +104,7 @@ export function TemplateManager({ templates: initialTemplates }: { templates: Te
       setUploadResult(data.summary)
       toast.success(`Template "${form.nama}" berhasil diupload & diaktifkan`)
       setUploadOpen(false)
-      setForm({ kode: '', nama: '', jenis_dokumen: 'pks', versi: '1.0', file: null })
+      setForm({ kode: '', nama: '', jenis_dokumen: 'pks', versi: '1.0', is_masal: false, judul_kartu: '', file: null })
       router.refresh()
     } catch (e: any) {
       toast.error(e.message)
@@ -191,6 +197,42 @@ export function TemplateManager({ templates: initialTemplates }: { templates: Te
                 />
                 {form.file && <p className="text-xs text-slate-500 mt-1">{form.file.name} ({(form.file.size / 1024).toFixed(1)} KB)</p>}
               </div>
+              
+              {/* Template Masal toggle */}
+              <div className="p-3 rounded border border-amber-200 bg-amber-50/50">
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.is_masal}
+                    onChange={e => setForm(f => ({ ...f, is_masal: e.target.checked }))}
+                    className="mt-1 w-4 h-4 accent-amber-600"
+                  />
+                  <div className="flex-1">
+                    <div className="text-sm font-semibold text-slate-900 flex items-center gap-1">
+                      🟤 Template Masal (Adendum Dropping Pusat)
+                    </div>
+                    <p className="text-xs text-slate-600 mt-0.5">
+                      Centang jika template ini adalah adendum masal dari kantor pusat.
+                      Akan muncul sebagai kartu coklat di menu "Buat Pengajuan" PIC RS.
+                    </p>
+                  </div>
+                </label>
+                {form.is_masal && (
+                  <div className="mt-3">
+                    <Label>Judul Kartu (yang dilihat PIC RS) *</Label>
+                    <Input
+                      value={form.judul_kartu}
+                      onChange={e => setForm(f => ({ ...f, judul_kartu: e.target.value }))}
+                      placeholder="Contoh: Perubahan Pasal 4.c Rawat Inap"
+                      required={form.is_masal}
+                    />
+                    <p className="text-xs text-slate-500 mt-1">
+                      Judul singkat yang akan ditampilkan di kartu coklat PIC RS.
+                    </p>
+                  </div>
+                )}
+              </div>
+              
               <Button type="submit" disabled={uploading} className="w-full">
                 {uploading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Upload & Parse...</> : <><Upload className="w-4 h-4 mr-2" /> Upload Template</>}
               </Button>
@@ -220,6 +262,7 @@ export function TemplateManager({ templates: initialTemplates }: { templates: Te
                   <TableHead className="text-center">Bab</TableHead>
                   <TableHead className="text-center">Placeholder</TableHead>
                   <TableHead className="text-center">Status</TableHead>
+                  <TableHead className="text-center">Masal</TableHead>
                   <TableHead className="text-right">Aksi</TableHead>
                 </TableRow>
               </TableHeader>
@@ -235,6 +278,15 @@ export function TemplateManager({ templates: initialTemplates }: { templates: Te
                     <TableCell className="text-center">
                       {t.is_active ? <Badge className="bg-green-100 text-green-800">Aktif</Badge> : <Badge variant="outline">Nonaktif</Badge>}
                       {t.is_locked && <Lock className="w-3 h-3 inline ml-1 text-slate-400" />}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {t.is_masal ? (
+                        <Badge className="bg-amber-100 text-amber-800" title={t.judul_kartu || ''}>
+                          🟤 {t.judul_kartu ? (t.judul_kartu.length > 20 ? t.judul_kartu.slice(0, 20) + '...' : t.judul_kartu) : 'Masal'}
+                        </Badge>
+                      ) : (
+                        <span className="text-xs text-slate-400">—</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex gap-1 justify-end">
@@ -333,10 +385,10 @@ export function TemplateManager({ templates: initialTemplates }: { templates: Te
               {/* Babs */}
               <div>
                 <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-slate-600" /> Struktur Bab ({detailOpen.babs?.length || 0})
+                  <Layers className="w-4 h-4 text-slate-600" /> Struktur Bab ({(detailOpen as any)?.babs?.length || 0})
                 </h4>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {(detailOpen.babs || []).map((bab: any) => (
+                  {((detailOpen as any)?.babs || []).map((bab: any) => (
                     <div key={bab.id} className="flex items-center justify-between p-2 rounded border border-slate-200 text-xs">
                       <div>
                         <span className="font-mono text-slate-500 mr-2">#{bab.urutan}</span>

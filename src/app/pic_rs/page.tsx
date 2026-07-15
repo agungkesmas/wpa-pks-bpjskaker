@@ -3,8 +3,9 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import Link from 'next/link'
-import { Plus, Inbox, FileSignature, Wallet, ShieldCheck, AlertCircle, Clock, ArrowRight, Building2, Calendar, FileText } from 'lucide-react'
+import { Plus, Inbox, FileSignature, Wallet, ShieldCheck, AlertCircle, Clock, ArrowRight, Building2, Calendar, FileText, Info } from 'lucide-react'
 import { AjukanPerpanjanganButton } from '@/components/wpa/AjukanPerpanjanganButton'
 
 export default async function PICRSDashboard() {
@@ -104,13 +105,14 @@ export default async function PICRSDashboard() {
             <Building2 className="w-10 h-10 text-orange-600 mx-auto mb-3" />
             <h3 className="text-lg font-semibold text-slate-900 mb-2">Belum Ada Faskes Terdaftar</h3>
             <p className="text-sm text-slate-600 mb-4">
-              Akun Anda belum terasosiasi ke faskes. Silakan ajukan PKS baru.
+              Akun Anda belum terasosiasi ke faskes. Hubungi Case Manager BPJS di kantor cabang Anda untuk pengajuan PKS Baru.
             </p>
-            <Link href="/pic_rs/ajukan-baru">
-              <Button className="bg-orange-600 hover:bg-orange-700">
-                <Plus className="w-4 h-4 mr-2" /> Ajukan PKS Baru
-              </Button>
-            </Link>
+            <Alert className="bg-blue-50 border-blue-200 text-left">
+              <Info className="w-4 h-4 text-blue-700" />
+              <AlertDescription className="text-blue-900 text-xs">
+                <strong>Proses PKS Baru:</strong> Faskes kirim surat fisik ke BPJS → CM input data + upload dokumen + buat akun PIC RS untuk Anda.
+              </AlertDescription>
+            </Alert>
           </CardContent>
         </Card>
       ) : null}
@@ -173,7 +175,7 @@ export default async function PICRSDashboard() {
         <CardHeader className="pb-3"><CardTitle className="text-base">Aksi Cepat</CardTitle></CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <Link href="/pic_rs/ajukan-baru"><Button className="w-full bg-orange-600 hover:bg-orange-700"><Plus className="w-4 h-4 mr-2" /> Ajukan PKS Baru</Button></Link>
+            <Link href="/pic_rs/ajukan-baru"><Button className="w-full bg-orange-600 hover:bg-orange-700"><Plus className="w-4 h-4 mr-2" /> Buat Pengajuan</Button></Link>
             <Link href="/pic_rs/pengajuan"><Button variant="outline" className="w-full justify-start"><Inbox className="w-4 h-4 mr-2" /> Pengajuan Saya</Button></Link>
             <Link href="/pic_rs/dokumen"><Button variant="outline" className="w-full justify-start"><FileSignature className="w-4 h-4 mr-2" /> Dokumen Saya</Button></Link>
             <Link href="/pic_rs/tarif"><Button variant="outline" className="w-full justify-start"><Wallet className="w-4 h-4 mr-2" /> Bank Tarif</Button></Link>

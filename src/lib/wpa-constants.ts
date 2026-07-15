@@ -11,6 +11,7 @@ export type JenisPipeline =
   | 'adendum_harga'
   | 'adendum_layanan_baru'
   | 'adendum_dropping'
+  | 'adendum_masal'
   | 'perubahan_data'
 
 export const JENIS_PENGAJUAN_LABELS: Record<string, string> = {
@@ -19,6 +20,7 @@ export const JENIS_PENGAJUAN_LABELS: Record<string, string> = {
   adendum_harga: 'Adendum Tarif',
   adendum_layanan_baru: 'Adendum Layanan Baru',
   adendum_dropping: 'Adendum Dropping Pusat',
+  adendum_masal: 'Adendum Masal',
   perubahan_data: 'Adendum Perubahan Data',
 }
 
@@ -28,6 +30,7 @@ export const JENIS_PENGAJUAN_SHORT: Record<string, string> = {
   adendum_harga: 'Adendum Tarif',
   adendum_layanan_baru: 'Adendum Layanan',
   adendum_dropping: 'Dropping Pusat',
+  adendum_masal: 'Adendum Masal',
   perubahan_data: 'Perubahan Data',
 }
 
@@ -100,6 +103,13 @@ export const TAHAP_FLOW: Record<string, { current: string; next: string; handler
     { current: 'review_legal_rs', next: 'tanda_tangan', handler_role: 'kepala_bidang' },
     { current: 'tanda_tangan', next: '__complete__', handler_role: 'kepala_bidang' },
   ],
+  // Adendum Masal: 3 tahap (PIC RS submit → CM group review → auto complete + generate PDF)
+  // Tanpa approval Kabid (CM cukup), tanpa TTD elektronik (pakai TTD basah), tanpa review Legal RS
+  // (template sudah legal-reviewed oleh admin pusat saat upload).
+  adendum_masal: [
+    { current: 'diajukan', next: 'ditinjau', handler_role: 'case_manager' },
+    { current: 'ditinjau', next: '__complete__', handler_role: 'case_manager' },
+  ],
   // Perubahan Data: skip kredensialing_ulang & tinjauan_tarif (bukan tarif, bukan cred)
   perubahan_data: [
     { current: 'diajukan', next: 'ditinjau', handler_role: 'case_manager' },
@@ -171,6 +181,11 @@ export const TAHAP_CONFIG_SEED: Array<{
   { jenis_pipeline: 'adendum_dropping', tahap: 'approval_kabid', urutan: 2, is_wajib: true, default_sla_days: 2, handler_role: 'kepala_bidang', description: 'Approval Kabid' },
   { jenis_pipeline: 'adendum_dropping', tahap: 'review_legal_rs', urutan: 3, is_wajib: true, default_sla_days: 5, handler_role: 'legal_rs', description: 'Review legal RS' },
   { jenis_pipeline: 'adendum_dropping', tahap: 'tanda_tangan', urutan: 4, is_wajib: true, default_sla_days: 3, handler_role: 'kepala_bidang', description: 'Tanda tangan' },
+
+  // ADENDUM MASAL (3 tahap — PIC RS submit → CM group review → auto generate PDF)
+  { jenis_pipeline: 'adendum_masal', tahap: 'diajukan', urutan: 1, is_wajib: true, default_sla_days: 1, handler_role: 'pic_rs', description: 'PIC RS submit form placeholder adendum masal' },
+  { jenis_pipeline: 'adendum_masal', tahap: 'ditinjau', urutan: 2, is_wajib: true, default_sla_days: 3, handler_role: 'case_manager', description: 'CM group review: ceklis multi, setuju/tolak bareng' },
+  { jenis_pipeline: 'adendum_masal', tahap: 'completed', urutan: 3, is_wajib: true, default_sla_days: 0, handler_role: 'case_manager', description: 'Auto-complete: generate PDF siap print TTD basah' },
 
   // PERUBAHAN DATA (6 tahap — skip kredensialing_ulang & tinjauan_tarif)
   { jenis_pipeline: 'perubahan_data', tahap: 'diajukan', urutan: 1, is_wajib: true, default_sla_days: 1, handler_role: 'pic_rs', description: 'PIC RS ajukan perubahan data' },
