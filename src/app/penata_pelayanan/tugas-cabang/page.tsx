@@ -1,5 +1,5 @@
-import { Placeholder } from '@/components/wpa/Placeholder'
+import { TugasCabangView } from '@/components/wpa/TugasCabangView'
 
-export default function Page() {
-  return <Placeholder title="Tugas Cabang" description="Tugas yang belum di-claim, bisa Ambil Alih." />
+export default function PPTugasCabangPage() {
+  return <TugasCabangView role="penata_pelayanan" />
 }
