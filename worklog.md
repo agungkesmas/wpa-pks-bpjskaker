@@ -858,3 +858,51 @@ Stage Summary:
 - ✅ 1 tampilan UI untuk 6 role (konsistensi layout, struktur, bahasa)
 - ✅ Mobile responsive verified (desktop/tablet/mobile)
 - ✅ 6 role login sukses di URL baru
+
+---
+Task ID: FASE-3-TEMPLATE-MANDATORI
+Agent: main
+Task: Fase 3 — Template Mandatori dengan hash per bab + klasifikasi placeholder
+
+Work Log:
+- Schema: 3 tabel + 1 RPC function baru
+  • wpa_pks_template: + template_hash, bab_hashes (jsonb), is_locked, jenis_dokumen
+  • wpa_template_bab (BARU): struktur bab/pasal/lampiran dengan content_hash per bab
+  • wpa_pks_template_placeholder: + bab_id, tipe (8 jenis), source_table, source_column
+  • RPC wpa_klasifikasi_placeholder(key): auto-detect tipe berdasarkan nama placeholder
+- Storage bucket: wpa-templates (public read)
+- API:
+  • POST /api/template/upload: upload .docx → parse mammoth → detect struktur bab → hash sha256 per bab → klasifikasi placeholder → aktivasi
+  • GET /api/template/list: list template (filter jenis, active_only)
+  • GET /api/template/detail/[id]: detail + babs + placeholders (grouped by bab)
+  • POST /api/template/toggle: aktivasi/nonaktifkan (auto-nonaktifkan lain dengan jenis sama)
+- UI Super Admin /template:
+  • List template dengan badge jenis, status, jumlah bab/placeholder
+  • Upload dialog: form (kode, nama, jenis, versi, file .docx)
+  • Upload result: summary (total bab, placeholder, auto-fill, manual required/optional, hash)
+  • Detail modal: 24 bab dengan hash 8-char per bab + 81 placeholder dengan badge tipe
+
+Test via Agent Browser (1 per 1):
+1. ✅ TEST 1: Login super admin → buka Template Mandatori (halaman muncul, tombol Upload tersedia)
+2. ✅ TEST 2: Upload template PKS_PLKK_2026 (139KB) → 33 bab, 81 placeholder, 9 auto-fill, 72 manual_required
+3. ✅ TEST 3: Template di list dengan badge "Aktif", 26 bab, 81 placeholder
+4. ✅ TEST 4: Detail modal → 24 bab (Cover, Pasal 1-21, Lampiran I-V, Pakta) dengan hash per bab
+5. ✅ TEST 5: Placeholder klasifikasi:
+   - {{NAMA_KANTOR_CABANG}} → Auto Kantor (wpa_kantor_cabang.nama)
+   - {{NAMA_FASKES}} → Auto Faskes (wpa_faskes.nama)
+   - {{NOMOR_PKS_PIHAK_PERTAMA}} → Manual Wajib
+6. ✅ TEST 6: Toggle aktivasi via API (Nonaktifkan template → status berubah)
+
+Bug fix selama dev:
+- wpa_pks_template pakai uploaded_at (bukan created_at)
+- mammoth Node.js pakai { buffer: Buffer } bukan { arrayBuffer }
+- Insert bab satu per satu (batch insert silent fail, single insert works)
+
+Stage Summary:
+- ✅ Template PKS_PLKK_2026 aktif di production: 24 bab + 81 placeholder
+- ✅ Hash sha256 per bab (konsistensi terjamin)
+- ✅ Klasifikasi placeholder otomatis: 9 auto-fill + 72 manual_required
+- ✅ Template LOCKED (tidak bisa diedit di cabang)
+- ✅ UI lengkap: list, upload, detail, toggle
+- ⏳ Fase 4: Pipeline State Machine (transisi tahap + Ambil Alih)
+- ⏳ Fase 5: Drafting PKS (auto-fill dari template + data faskes)
