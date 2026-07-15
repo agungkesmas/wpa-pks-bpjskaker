@@ -17,7 +17,7 @@ export default async function KantorDetailPage({ params }: { params: Promise<{ i
   
   const { data: users } = await supabaseAdmin
     .from('wpa_users')
-    .select('id, email, full_name, role, phone, nip, profile_photo_url, is_active, last_login_at, created_at, must_change_password')
+    .select('id, email, full_name, role, phone, nip, profile_photo_url, is_active, last_login_at, created_at, must_change_password, temp_password')
     .eq('kantor_cabang_id', id)
     .order('role').order('full_name')
   

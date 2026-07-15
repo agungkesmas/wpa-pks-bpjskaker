@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -35,6 +36,7 @@ interface User {
   last_login_at: string | null
   created_at: string
   must_change_password: boolean
+  temp_password: string | null
   mutasi_pending: any
 }
 
@@ -151,7 +153,7 @@ export function KantorDetailManager({ kantor, users, faskes, allKantor, stats, c
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       
-      // Simpan temp_password ke DB untuk ditampilkan di Slip A4
+      // Simpan temp_password ke DB untuk ditampilkan di Slip Kredensial
       await fetch('/api/users/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -227,18 +229,46 @@ export function KantorDetailManager({ kantor, users, faskes, allKantor, stats, c
     }
   }
   
-  function printIdCard(user?: User) {
-    const url = user 
-      ? `/api/print/id-card?user_id=${user.id}`
-      : `/api/print/id-card?kantor_cabang_id=${kantor.id}`
-    window.open(url, '_blank')
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set())
+  
+  function toggleSelectUser(userId: string) {
+    setSelectedUsers(prev => {
+      const next = new Set(prev)
+      if (next.has(userId)) next.delete(userId)
+      else next.add(userId)
+      return next
+    })
   }
   
-  function printSlipA4(user?: User) {
-    const url = user 
-      ? `/api/print/slip-a4?user_id=${user.id}`
-      : `/api/print/slip-a4?kantor_cabang_id=${kantor.id}`
-    window.open(url, '_blank')
+  function toggleSelectAll() {
+    if (selectedUsers.size === users.length) {
+      setSelectedUsers(new Set())
+    } else {
+      setSelectedUsers(new Set(users.map(u => u.id)))
+    }
+  }
+  
+  function printKredensial(user?: User) {
+    if (user) {
+      window.open(`/api/print/slip-kredensial?user_id=${user.id}`, '_blank')
+    } else {
+      window.open(`/api/print/slip-kredensial?kantor_cabang_id=${kantor.id}`, '_blank')
+    }
+  }
+  
+  function printSelected() {
+    // Print each selected user's slip in sequence
+    const ids = Array.from(selectedUsers)
+    if (ids.length === 0) return
+    // For batch: use kantor_cabang_id (prints all active users)
+    // For specific selected: open each in sequence
+    if (ids.length === users.length) {
+      printKredensial()
+    } else {
+      ids.forEach((id, i) => {
+        setTimeout(() => window.open(`/api/print/slip-kredensial?user_id=${id}`, '_blank'), i * 500)
+      })
+    }
   }
   
   return (
@@ -306,12 +336,14 @@ export function KantorDetailManager({ kantor, users, faskes, allKantor, stats, c
         <TabsContent value="users" className="space-y-4">
           <div className="flex flex-wrap gap-2 justify-between">
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => printIdCard()}>
-                <Printer className="w-3 h-3 mr-1" /> Print Semua ID Card
+              <Button variant="outline" size="sm" onClick={() => printKredensial()}>
+                <Printer className="w-3 h-3 mr-1" /> Print Semua Kredensial
               </Button>
-              <Button variant="outline" size="sm" onClick={() => printSlipA4()}>
-                <Printer className="w-3 h-3 mr-1" /> Print Slip A4 Semua
-              </Button>
+              {selectedUsers.size > 0 && (
+                <Button variant="outline" size="sm" className="border-blue-300 text-blue-700" onClick={printSelected}>
+                  <Printer className="w-3 h-3 mr-1" /> Print Terpilih ({selectedUsers.size})
+                </Button>
+              )}
             </div>
             {canCreateUser && (
               <Dialog open={userDialog} onOpenChange={setUserDialog}>
@@ -371,19 +403,19 @@ export function KantorDetailManager({ kantor, users, faskes, allKantor, stats, c
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-8"><Checkbox checked={selectedUsers.size === users.length && users.length > 0} onCheckedChange={toggleSelectAll} /></TableHead>
                     <TableHead>Nama</TableHead>
                     <TableHead>Role</TableHead>
-                    <TableHead>NIP</TableHead>
+                    <TableHead>Password</TableHead>
                     <TableHead>Login Terakhir</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Mutasi</TableHead>
                     <TableHead className="text-right">Aksi</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {users.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center text-slate-500 py-8">
+                      <TableCell colSpan={8} className="text-center text-slate-500 py-8">
                         Belum ada user di kantor ini
                       </TableCell>
                     </TableRow>
@@ -391,6 +423,7 @@ export function KantorDetailManager({ kantor, users, faskes, allKantor, stats, c
                     const initials = u.full_name.split(' ').map(w => w.charAt(0)).slice(0,2).join('').toUpperCase()
                     return (
                       <TableRow key={u.id}>
+                        <TableCell><Checkbox checked={selectedUsers.has(u.id)} onCheckedChange={() => toggleSelectUser(u.id)} /></TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Avatar className="w-8 h-8">
@@ -409,7 +442,13 @@ export function KantorDetailManager({ kantor, users, faskes, allKantor, stats, c
                         <TableCell>
                           <Badge className={ROLE_COLORS[u.role]}>{ROLE_LABELS[u.role]}</Badge>
                         </TableCell>
-                        <TableCell className="text-xs font-mono">{u.nip || '-'}</TableCell>
+                        <TableCell>
+                          {u.temp_password ? (
+                            <span className="font-mono text-xs bg-yellow-50 border border-yellow-200 px-2 py-0.5 rounded text-yellow-800">{u.temp_password}</span>
+                          ) : (
+                            <span className="text-xs text-slate-400">•••••• (sudah diganti)</span>
+                          )}
+                        </TableCell>
                         <TableCell className="text-xs text-slate-500">
                           {u.last_login_at ? new Date(u.last_login_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }) : 'Belum pernah'}
                         </TableCell>
@@ -440,11 +479,8 @@ export function KantorDetailManager({ kantor, users, faskes, allKantor, stats, c
                             <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setMutasiDialog(u)} title="Mutasi">
                               <ArrowRightLeft className="w-3 h-3 text-blue-600" />
                             </Button>
-                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => printIdCard(u)} title="Print ID Card">
+                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => printKredensial(u)} title="Print Kredensial">
                               <Printer className="w-3 h-3 text-slate-600" />
-                            </Button>
-                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => printSlipA4(u)} title="Print Slip A4">
-                              <FileSignature className="w-3 h-3 text-purple-600" />
                             </Button>
                             <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => toggleUserActive(u)} title={u.is_active ? 'Nonaktifkan' : 'Aktifkan'}>
                               <Power className={`w-3 h-3 ${u.is_active ? 'text-red-600' : 'text-green-600'}`} />
@@ -704,8 +740,8 @@ export function KantorDetailManager({ kantor, users, faskes, allKantor, stats, c
                 }}>
                   Copy Password
                 </Button>
-                <Button variant="outline" className="flex-1" onClick={() => printSlipA4()}>
-                  <Printer className="w-3 h-3 mr-1" /> Print Slip A4
+                <Button variant="outline" className="flex-1" onClick={() => printKredensial()}>
+                  <Printer className="w-3 h-3 mr-1" /> Print Kredensial
                 </Button>
               </div>
             </div>
