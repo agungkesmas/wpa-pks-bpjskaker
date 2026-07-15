@@ -36,7 +36,7 @@ alter table wpa_pipeline
 create table if not exists wpa_dropping_pusat_batch (
   id uuid primary key default gen_random_uuid(),
   kantor_cabang_id uuid not null references wpa_kantor_cabang(id) on delete cascade,
-  template_id uuid references wpa_templates(id) on delete set null,
+  template_id uuid references wpa_pks_template(id) on delete set null,
   no_surat_pusat text not null,
   tanggal_surat_pusat date not null,
   perihal text not null,
