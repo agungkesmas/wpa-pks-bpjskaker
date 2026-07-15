@@ -1099,3 +1099,48 @@ Stage Summary:
 - ✅ Auto-open editor after create dokumen
 - ✅ Tombol Edit di Riwayat → buka editor
 - ✅ Production: https://mitra-plkk.vercel.app
+
+---
+Task ID: FASE-4-PIPELINE-STATE-MACHINE
+Agent: main
+Task: Fase 4 — Pipeline State Machine (transisi tahap + SLA + Ambil Alih)
+
+API:
+- POST /api/pipeline/transition: advance/return/reject/cancel
+  - TAHAP_FLOW: 5 jenis × 4-8 tahap dengan next/prev mapping
+  - Role-based authorization per tahap (CM/PP/Kabid/Legal RS)
+  - SLA calculation: actual hours per tahap
+  - Auto-assign next handler berdasarkan role
+  - Auto-notify next handler + initiator
+  - faskes status → 'aktif' saat pks_baru completed
+  - SLA deadline dari tahap_config
+- POST /api/pipeline/takeover: Ambil Alih tugas
+  - PP hanya jika takeover_enabled=true
+  - Auto-close takeover setelah diambil
+  - Log ke 3 tabel (takeover_log + access_control + pipeline_log)
+
+UI (PipelineDetailView, reusable CM/PP/Kabid):
+- Status banner: Selesai/Ditolak/Dibatalkan/Sedang Berjalan + SLA countdown
+- Tracking 8 tahap: Selesai (green) / Berjalan (blue, animate-pulse) / Menunggu
+- Handler role badge + SLA days per tahap
+- Timeline aktivitas: enter/complete/takeover/return/reject dengan SLA hours
+- Action buttons (context-aware):
+  • Lanjutkan ke Tahap Berikutnya (hanya handler)
+  • Ambil Alih (CM/Kabid selalu, PP jika takeover_enabled)
+  • Kembalikan ke tahap sebelumnya
+  • Tolak pengajuan
+- Action dialog dengan catatan
+
+Test via Agent Browser:
+1. ✅ CM buka detail pipeline RS Sehat Sentosa: status "Sedang Berjalan" tahap "Pengajuan"
+2. ✅ CM Ambil Alih: badge "Saya Pegang" + tombol "Lanjutkan ke Tahap Berikutnya"
+3. ✅ CM Advance: "Pengajuan" → "Peninjauan Surat" (toast success)
+4. ✅ Tracking: "Pengajuan" = Selesai, "Peninjauan Surat" = Berjalan
+5. ✅ Timeline: 4 log entries (enter → takeover → complete → enter) dengan SLA hours
+6. ✅ SLA countdown: "2 hari lagi" untuk tahap Peninjauan
+
+State machine verified:
+- diajukan → (advance) → ditinjau → (advance) → kredensialing → ... → tanda_tangan → completed
+- Setiap advance: auto-assign handler + SLA deadline + notify
+- Setiap complete: SLA actual hours tracked
+- Takeover: from_user → to_user + auto-close takeover_enabled
