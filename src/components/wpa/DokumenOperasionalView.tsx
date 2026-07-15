@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { DocumentEditor } from '@/components/wpa/DocumentEditor'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -121,6 +122,9 @@ export function DokumenOperasionalView({ role }: Props) {
   // Review state
   const [reviewDokumen, setReviewDokumen] = useState<Dokumen | null>(null)
   const [reviewCatatan, setReviewCatatan] = useState('')
+  
+  // Editor state
+  const [editingDokumenId, setEditingDokumenId] = useState<string | null>(null)
   const [reviewLoading, setReviewLoading] = useState(false)
   
   useEffect(() => {
@@ -203,6 +207,10 @@ export function DokumenOperasionalView({ role }: Props) {
       setCreateOpen(false)
       setCreateForm({ template_operasional_id: '', jenis: 'sp1', faskes_id: '', pks_id: '', judul: '', narasi: '', deadline: '' })
       fetchAll()
+      // Auto-open editor after create
+      if (data.dokumen?.id) {
+        setEditingDokumenId(data.dokumen.id)
+      }
     } catch (e: any) { toast.error(e.message) }
     finally { setCreating(false) }
   }
@@ -245,6 +253,21 @@ export function DokumenOperasionalView({ role }: Props) {
   const canUpload = role === 'case_manager' || role === 'penata_pelayanan' || role === 'kepala_bidang'
   const canReview = role === 'case_manager' || role === 'kepala_bidang'
   const canSend = role === 'case_manager' || role === 'kepala_bidang'
+  
+  // If editing, show DocumentEditor
+  if (editingDokumenId) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={() => { setEditingDokumenId(null); fetchAll() }}>
+            ← Kembali ke Daftar
+          </Button>
+          <h2 className="text-lg font-semibold text-slate-900">Editor Dokumen</h2>
+        </div>
+        <DocumentEditor dokumenId={editingDokumenId} onClose={() => { setEditingDokumenId(null); fetchAll() }} />
+      </div>
+    )
+  }
   
   return (
     <div className="space-y-6">
@@ -399,11 +422,12 @@ export function DokumenOperasionalView({ role }: Props) {
                     <TableHead>Jenis</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Dibuat</TableHead>
+                    <TableHead className="text-right">Aksi</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {dokumens.length === 0 ? (
-                    <TableRow><TableCell colSpan={6} className="text-center text-slate-500 py-8">Belum ada dokumen</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={7} className="text-center text-slate-500 py-8">Belum ada dokumen</TableCell></TableRow>
                   ) : dokumens.map(d => (
                     <TableRow key={d.id}>
                       <TableCell className="font-mono text-xs">{d.nomor_dokumen}</TableCell>
@@ -412,6 +436,11 @@ export function DokumenOperasionalView({ role }: Props) {
                       <TableCell><Badge className={JENIS_COLORS[d.jenis]}>{JENIS_LABELS[d.jenis] || d.jenis}</Badge></TableCell>
                       <TableCell><Badge className={STATUS_COLORS[d.status]}>{STATUS_LABELS[d.status] || d.status}</Badge></TableCell>
                       <TableCell className="text-xs text-slate-500">{new Date(d.created_at).toLocaleDateString('id-ID')}</TableCell>
+                      <TableCell className="text-right">
+                        <Button size="sm" variant="ghost" className="h-7" onClick={() => setEditingDokumenId(d.id)}>
+                          <FileText className="w-3 h-3 mr-1" /> Edit
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
