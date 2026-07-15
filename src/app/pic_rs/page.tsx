@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { Plus, Inbox, FileSignature, Wallet, ShieldCheck, AlertCircle, Clock, ArrowRight, Building2 } from 'lucide-react'
+import { Plus, Inbox, FileSignature, Wallet, ShieldCheck, AlertCircle, Clock, ArrowRight, Building2, Calendar } from 'lucide-react'
 
 export default async function PICRSDashboard() {
   const me = await getSession()
@@ -168,6 +168,13 @@ export default async function PICRSDashboard() {
             <Link href="/pic_rs/pengajuan"><Button variant="outline" className="w-full justify-start"><Inbox className="w-4 h-4 mr-2" /> Pengajuan Saya</Button></Link>
             <Link href="/pic_rs/dokumen"><Button variant="outline" className="w-full justify-start"><FileSignature className="w-4 h-4 mr-2" /> Dokumen Saya</Button></Link>
             <Link href="/pic_rs/tarif"><Button variant="outline" className="w-full justify-start"><Wallet className="w-4 h-4 mr-2" /> Bank Tarif</Button></Link>
+            {daysLeft !== null && daysLeft <= 90 && (
+              <Link href="/pic_rs/ajukan-baru?jenis=perpanjangan">
+                <Button className="w-full bg-yellow-600 hover:bg-yellow-700">
+                  <Calendar className="w-4 h-4 mr-2" /> Ajukan Perpanjangan
+                </Button>
+              </Link>
+            )}
           </div>
         </CardContent>
       </Card>

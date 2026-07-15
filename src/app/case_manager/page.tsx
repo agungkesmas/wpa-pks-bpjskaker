@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { Briefcase, Inbox, Building2, Wallet, AlertCircle, Clock, ArrowRight } from 'lucide-react'
+import { Briefcase, Inbox, Building2, Wallet, AlertCircle, Clock, ArrowRight, FileText } from 'lucide-react'
 
 export default async function CMDashboard() {
   const me = await getSession()
@@ -96,9 +96,10 @@ export default async function CMDashboard() {
       <Card>
         <CardHeader className="pb-3"><CardTitle className="text-base">Aksi Cepat</CardTitle></CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <Link href="/case_manager/tugas"><Button variant="outline" className="w-full justify-start"><Briefcase className="w-4 h-4 mr-2" /> Tugas Saya</Button></Link>
             <Link href="/case_manager/faskes"><Button variant="outline" className="w-full justify-start"><Building2 className="w-4 h-4 mr-2" /> Faskes Mitra</Button></Link>
+            <Link href="/case_manager/dokumen-operasional"><Button variant="outline" className="w-full justify-start"><FileText className="w-4 h-4 mr-2" /> Dokumen Operasional</Button></Link>
             <Link href="/case_manager/tarif"><Button variant="outline" className="w-full justify-start"><Wallet className="w-4 h-4 mr-2" /> Bank Tarif</Button></Link>
           </div>
         </CardContent>
