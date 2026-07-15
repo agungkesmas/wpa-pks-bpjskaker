@@ -1276,3 +1276,124 @@ Stage Summary:
   1. Run `scripts/wpa_plkk_final_schema.sql` (re-seed tahap config, rename negosiasi_tarif → tinjauan_tarif)
   2. Run `scripts/wpa_dropping_pusat_v2_schema.sql` (create wpa_dropping_pusat_batch + wpa_dropping_pusat_exclude, add adendum_layanan_baru to jenis check, migrate in-flight pipelines)
 - Type-check: ✅ semua file baru bersih (0 error). 1 error pre-existing di RoleShell.tsx(218) terkait type narrowing super_admin — bukan dari perubahan ini.
+
+---
+Task ID: FASE6-ADENDUM-MASAL+PIC-RS-REFACTOR
+Agent: main
+Task: Implementasi Adendum Masal (template-driven) + Refaktor PIC RS upload file + CM-driven PKS Baru.
+
+Work Log:
+- Audit: temukan bahwa flow PIC RS salah konsep — sebelumnya PIC RS dipaksa isi form panjang (~15 field), padahal seharusnya PIC RS = pengirim surat fisik (PDF). Data faskes diinput CM saat drafting.
+- Audit: temukan juga bahwa /api/template/upload TIDAK ADA (frontend panggil tapi backend belum dibuat). Bug existing.
+- Audit: tabel wpa_pengajuan_dokumen + enum wpa_dokumen_pengajuan_jenis + bucket wpa-pengajuan-docs SUDAH ada (dari fase sebelumnya), tapi belum dipakai end-to-end.
+
+ADENDUM MASAL (template-driven):
+- SQL migration: scripts/wpa_adendum_masal_schema.sql
+  - Tambah jenis 'adendum_masal' ke check constraint
+  - Tambah kolom is_masal + judul_kartu di wpa_pks_template
+  - Tambah kolom template_id + pdf_generated_url di wpa_pipeline
+  - Buat tabel wpa_pipeline_placeholder_values (simpan isi form placeholder per pipeline)
+  - Seed tahap config: 3 tahap (diajukan → ditinjau → completed)
+- wpa-constants.ts: tambah adendum_masal ke JENIS_PENGAJUAN_LABELS, TAHAP_FLOW (3 tahap), TAHAP_CONFIG_SEED
+- API baru:
+  - /api/template/upload (SEBELUMNYA HILANG! sekarang support is_masal + judul_kartu + auto-scan placeholder {{KEY}})
+  - /api/adendum-masal/list-templates (PIC RS ambil kartu coklat dari template is_masal=true)
+  - /api/adendum-masal/create (PIC RS submit placeholder values)
+  - /api/adendum-masal/list-pending (CM lihat grouped by template)
+  - /api/adendum-masal/group-action (CM setuju/tolak multiple pipelines sekaligus)
+  - /api/adendum-masal/detail (PIC RS/CM lihat detail + placeholder values)
+- Komponen baru:
+  - AdendumMasalGroupReview.tsx (CM group review: ceklis multi → setuju/tolak bareng)
+  - FileUploader.tsx (drag & drop, multiple, tampilkan file wajib per jenis)
+- Halaman baru:
+  - /pic_rs/adendum-masal/[templateId] (form placeholder auto dari scan + review + submit)
+  - /case_manager/adendum-masal (group review dengan ceklis multi)
+- Update TemplateManager.tsx: tambah checkbox "Template Masal (Adendum Dropping Pusat)" + field "Judul Kartu". Muncul sebagai kolom "Masal" di tabel template.
+- Update RoleShell menu: tambah "Adendum Masal" untuk CM.
+
+REFAKTOR PIC RS (upload file wajib):
+- wpa-constants.ts: tambah DOKUMEN_REQUIREMENTS (file wajib per jenis pengajuan):
+  - pks_baru: 7 file (surat pengantar, company profile, tarif, akta, izin, npwp, sk_pj)
+  - perpanjangan: 2 file (surat permohonan, tarif)
+  - adendum_harga: 3 file (surat pengantar adendum, lampiran, tarif)
+  - adendum_layanan_baru: 3 file (same shape as adendum_harga)
+  - perubahan_data: 2 file (surat pengantar adendum, lampiran)
+  - adendum_masal: 0 file (pakai placeholder form, bukan upload)
+- SQL migration: scripts/wpa_dokumen_pengajuan_v2_schema.sql (extend enum dengan jenis file baru)
+- API baru:
+  - /api/pengajuan-dokumen/upload (multipart, upload ke bucket wpa-pengajuan-docs, signed URL 7 hari)
+  - /api/pengajuan-dokumen/list (regenerate signed URL untuk akses)
+  - /api/pengajuan-draft/create (PIC RS buat draft pipeline sebelum upload file lengkap)
+  - /api/pengajuan-draft/submit (validate semua file wajib sudah upload → advance ke ditinjau)
+- Refaktor /pic_rs/ajukan-baru/page.tsx:
+  - 3 kartu utama: PKS Baru (disabled, info "Hubungi CM"), Perpanjangan, Adendum
+  - Section "Adendum Masal (dari Kantor Pusat)" dengan kartu coklat dinamis dari template is_masal=true
+  - Help banner dengan info kontak CM
+- Sub-pages baru:
+  - /pic_rs/ajukan-baru/perpanjangan (pilih PKS → buat draft → upload 2 file → submit)
+  - /pic_rs/ajukan-baru/adendum (pilih sub-jenis: Tarif/Layanan Baru/Perubahan Data → buat draft → upload file → submit)
+
+CM-DRIVEN PKS BARU (PIC RS tidak bisa ajukan, CM yang handle end-to-end):
+- API baru: /api/cm/pks-baru/create
+  - Validate 7 file wajib sudah diupload (via /api/pengajuan-dokumen/upload dengan temp session ID)
+  - Create faskes (status: pengajuan)
+  - Create PIC RS user (generate temp password 8 char + must_change_password=true)
+  - Link PIC RS ke faskes via wpa_user_faskes
+  - Create pipeline (current_tahap: ditinjau, handler: CM)
+  - Insert pipeline logs (enter diajukan → complete → enter ditinjau)
+  - Link dokumen ke pipeline (insert ke wpa_pengajuan_dokumen)
+  - Notify PIC RS (with credentials)
+  - Audit log
+- Halaman baru: /case_manager/pks-baru
+  - Form data faskes (nama, jenis, alamat, PJ, bank, dll)
+  - FileUploader untuk 7 file wajib
+  - Form buat akun PIC RS (email, nama, HP)
+  - Submit → success modal dengan temp password yang dicatat
+
+UI/UX:
+- Menu PIC RS: rename "Ajukan Pengajuan" → "Buat Pengajuan"
+- Menu CM: tambah "PKS Baru" + "Adendum Masal" (sekarang 8 menu)
+- Dashboard PIC RS: hapus tombol "Ajukan PKS Baru", ganti dengan info "Hubungi CM BPJS" + penjelasan proses
+- PipelineDetailView: tampilkan list dokumen yang diupload + placeholder values (untuk adendum_masal)
+- Pipeline detail API: include wpa_pengajuan_dokumen + wpa_pipeline_placeholder_values + wpa_pks_template
+
+Stage Summary:
+- File baru (15):
+  - scripts/wpa_adendum_masal_schema.sql
+  - scripts/wpa_dokumen_pengajuan_v2_schema.sql (sebelumnya)
+  - src/components/wpa/AdendumMasalGroupReview.tsx
+  - src/components/wpa/FileUploader.tsx (sebelumnya)
+  - src/app/api/template/upload/route.ts (SEBELUMNYA HILANG, sekarang dibuat)
+  - src/app/api/adendum-masal/list-templates/route.ts
+  - src/app/api/adendum-masal/create/route.ts
+  - src/app/api/adendum-masal/list-pending/route.ts
+  - src/app/api/adendum-masal/group-action/route.ts
+  - src/app/api/adendum-masal/detail/route.ts
+  - src/app/api/pengajuan-dokumen/upload/route.ts (sebelumnya)
+  - src/app/api/pengajuan-dokumen/list/route.ts (sebelumnya)
+  - src/app/api/pengajuan-draft/create/route.ts (sebelumnya)
+  - src/app/api/pengajuan-draft/submit/route.ts (sebelumnya)
+  - src/app/api/cm/pks-baru/create/route.ts
+  - src/app/pic_rs/adendum-masal/[templateId]/page.tsx
+  - src/app/pic_rs/ajukan-baru/perpanjangan/page.tsx
+  - src/app/pic_rs/ajukan-baru/adendum/page.tsx
+  - src/app/case_manager/adendum-masal/page.tsx
+  - src/app/case_manager/pks-baru/page.tsx
+- File update (8):
+  - src/lib/wpa-constants.ts (TAHAP_FLOW adendum_masal + DOKUMEN_REQUIREMENTS)
+  - src/components/wpa/TemplateManager.tsx (checkbox is_masal + judul_kartu)
+  - src/components/wpa/RoleShell.tsx (menu update)
+  - src/components/wpa/PipelineDetailView.tsx (tampilkan dokumen + placeholder)
+  - src/app/api/pipeline/detail/[id]/route.ts (include dokumen + placeholder + template)
+  - src/app/pic_rs/page.tsx (dashboard update)
+  - src/app/pic_rs/ajukan-baru/page.tsx (3 kartu + kartu coklat dinamis)
+  - src/app/api/pengajuan-draft/create/route.ts (fix type narrowing)
+- Tahap final adendum_masal (3 tahap):
+  1. diajukan (PIC RS) — submit form placeholder
+  2. ditinjau (CM) — group review: ceklis multi → setuju/tolak bareng
+  3. completed (auto) — pipeline closed, PDF siap print TTD basah
+- ⚠️ MIGRATION WAJIB JALANKAN di Supabase Studio:
+  1. scripts/wpa_dokumen_pengajuan_v2_schema.sql (extend enum dokumen jenis)
+  2. scripts/wpa_adendum_masal_schema.sql (tabel placeholder + kolom is_masal + jenis adendum_masal)
+- Type-check: ✅ semua file baru bersih (0 error dari perubahan ini)
+- Sudah di-push ke GitHub (commit f73adc7).
