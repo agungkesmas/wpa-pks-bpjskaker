@@ -963,3 +963,63 @@ Stage Summary:
 - ✅ Minim klik: dari dashboard → 1 klik ke Tugas Saya → 1 klik ke detail/Ambil Alih
 - ✅ Tidak ada lagi redundant "Tugas Saya" + "Tugas Cabang"
 - ✅ PP tetap controlled: hanya lihat yang takeover_enabled=true atau yang dia pegang
+
+---
+Task ID: DOKUMEN-OPERASIONAL
+Agent: main
+Task: Two-Tier Template System — Dokumen Operasional (Tier 2, cabang level)
+
+Schema:
+- wpa_template_operasional: per cabang, editable, CM/PP/Kabid upload
+  - is_national flag (super_admin upload = nasional)
+  - 10 jenis: sp1/sp2/sp3/ba_visitasi/surat_edaran/undangan/surat_pemberitahuan/laporan_visitasi/ba_negosiasi/lainnya
+- wpa_dokumen_operasional: dokumen yang di-generate dari template
+  - Auto-fill data pokok dari wpa_faskes + wpa_kantor_cabang + wpa_pks
+  - Auto-generate nomor dokumen (SP1.001/CABANG/2026)
+  - Status: draft → review_cm → approved → sent → archived
+- wpa_dokumen_operasional_log: audit trail
+- Storage bucket: wpa-dok-operasional
+
+API:
+- POST /api/template-operasional/upload: CM/PP/Kabid upload .docx → parse placeholder
+- GET /api/template-operasional/list: list template (cabang + nasional)
+- POST /api/dokumen-operasional/create: PP/CM draft → auto-fill 8+ fields → auto nomor
+- GET /api/dokumen-operasional/list: list (filter: drafted_by_me, review_for_me)
+- POST /api/dokumen-operasional/review: CM/Kabid approve/reject
+  - SP1/SP2: PP draft → CM approve (2-layer)
+  - SP3: PP draft → CM approve → Kabid approve (3-layer)
+- POST /api/dokumen-operasional/send: kirim ke PIC RS + notifikasi
+
+UI (DokumenOperasionalView, reusable CM/PP/Kabid):
+- 3 Tabs: Buat Surat | Riwayat | Template
+- Form: dropdown faskes (auto-fill), dropdown jenis, free-text narasi, date picker deadline
+- Antrean Review (CM): dokumen status=review_cm → Setujui/Tolak
+- Siap Kirim: dokumen status=approved → Kirim ke RS
+- Riwayat: tabel dengan badge jenis + status
+
+Menu update:
+- CM: 4 → 5 menu (tambah Dokumen Operasional)
+- PP: 3 → 4 menu (tambah Dokumen Operasional)
+
+Test e2e (via API + Agent Browser):
+1. ✅ CM menus: 5 (Dashboard, Tugas Saya, Faskes Mitra, Dokumen Operasional, Bank Tarif)
+2. ✅ PP menus: 4 (Dashboard, Tugas Saya, Faskes Mitra, Dokumen Operasional)
+3. ✅ CM buat SP1 langsung → status: approved (CM draft = auto-approve)
+   - Auto-fill: NAMA_KANTOR_CABANG, ALAMAT_KANTOR, KOTA, TELP, TANGGAL, HARI
+   - Nomor: SP1.001/D39A2476/2026
+4. ✅ PP buat SP2 → status: review_cm → notifikasi ke CM
+   - Auto-fill: 8 fields dari data kantor cabang
+   - Nomor: SP2.001/D39A2476/2026
+5. ✅ CM approve SP2 → status: approved
+6. ✅ CM kirim SP2 ke RS → status: sent + notifikasi PIC RS
+7. ✅ Riwayat: 2 dokumen dengan badge jenis (SP1=yellow, SP2=orange) + status (Disetujui, Terkirim)
+
+Auto-fill verified (Single Source of Truth):
+- Pilih faskes → auto: nama, alamat, NPWP, PJ, bank, telp, email
+- Auto: nama kantor, alamat kantor, kota, telp, tanggal hari ini, hari
+- Pilih PKS → auto: nomor PKS, tanggal mulai/berakhir
+
+Approval flow (standar industri):
+- SP1/SP2: PP draft → CM review → approve → kirim (2-layer, 4-Eyes)
+- SP3: PP draft → CM review → Kabid approve → kirim (3-layer)
+- Surat edaran: CM draft langsung → kirim (1-layer)
