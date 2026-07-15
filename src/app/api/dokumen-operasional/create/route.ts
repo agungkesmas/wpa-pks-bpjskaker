@@ -10,7 +10,7 @@ const schema = z.object({
   pks_id: z.string().optional(),
   jenis: z.enum(['sp1','sp2','sp3','ba_visitasi','surat_edaran','undangan','surat_pemberitahuan','laporan_visitasi','ba_negosiasi','lainnya']),
   judul: z.string().min(3),
-  data_jsonb: z.record(z.any()),
+  data_jsonb: z.record(z.string(), z.any()),
   bukti_urls: z.array(z.string()).optional(),
 })
 
