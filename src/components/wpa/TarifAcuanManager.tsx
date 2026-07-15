@@ -12,8 +12,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Plus, Calculator, FileSpreadsheet, Trash2, Loader2, TrendingUp, Info } from 'lucide-react'
+import { Plus, Calculator, FileSpreadsheet, Trash2, Loader2, TrendingUp, Info, Upload, Download } from 'lucide-react'
 import { toast } from 'sonner'
+import { BatchImportDialog } from './BatchImportDialog'
 
 interface Acuan {
   id: string
@@ -60,6 +61,8 @@ export function TarifAcuanManager({ acuanList, kantor_cabang_id, tahun }: Props)
   const [calcLoading, setCalcLoading] = useState(false)
   const [mode, setMode] = useState<'manual' | 'calculation'>('manual')
   const [preview, setPreview] = useState<any>(null)
+  const [importMode, setImportMode] = useState<'provinsi' | 'daerah'>('provinsi')
+  const [importOpen, setImportOpen] = useState(false)
   
   // Manual form
   const [manualForm, setManualForm] = useState({
@@ -194,6 +197,25 @@ export function TarifAcuanManager({ acuanList, kantor_cabang_id, tahun }: Props)
               <FileSpreadsheet className="w-4 h-4 mr-2" /> Download Template Excel
             </Button>
           </a>
+          {/* Download template standar */}
+          <a href={`/api/tarif/template-standar?mode=${importMode}`} target="_blank">
+            <Button variant="outline">
+              <Download className="w-4 h-4 mr-2" /> Template Standar
+            </Button>
+          </a>
+          {/* Import batch */}
+          <Button variant="outline" onClick={() => setImportOpen(true)}>
+            <Upload className="w-4 h-4 mr-2" /> Import Batch
+          </Button>
+          {/* Pilih mode import */}
+          <select
+            value={importMode}
+            onChange={e => setImportMode(e.target.value as any)}
+            className="border border-slate-200 rounded px-3 py-2 text-sm bg-white"
+          >
+            <option value="provinsi">Mode: Baku Provinsi</option>
+            <option value="daerah">Mode: Rata-rata Daerah</option>
+          </select>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button className="bg-blue-700 hover:bg-blue-800">
@@ -417,6 +439,29 @@ export function TarifAcuanManager({ acuanList, kantor_cabang_id, tahun }: Props)
           </CardContent>
         </Card>
       )}
+
+      {/* Import Batch Dialog */}
+      <BatchImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        title={`Import Tarif Acuan — ${importMode === 'daerah' ? 'Rata-rata Daerah' : 'Baku Provinsi'}`}
+        templateUrl={`/api/tarif/template-standar?mode=${importMode}`}
+        importUrl={`/api/tarif/batch-import?mode=${importMode}&tahun=${tahun}`}
+        entityName="tarif"
+        columns={[
+          { key: 'kategori', label: 'Kategori' },
+          { key: 'kode_item', label: 'Kode Item' },
+          { key: 'nama_item_standar', label: 'Nama Item Standar', required: true },
+          { key: 'nama_item_alias', label: 'Alias' },
+          { key: 'satuan', label: 'Satuan' },
+          ...(importMode === 'daerah'
+            ? [{ key: 'RS_1_nama', label: 'RS 1 Nama' }, { key: 'RS_1_tarif', label: 'RS 1 Tarif' }, { key: 'RS_2_nama', label: 'RS 2 Nama' }, { key: 'RS_2_tarif', label: 'RS 2 Tarif' }, { key: 'RS_3_nama', label: 'RS 3 Nama' }, { key: 'RS_3_tarif', label: 'RS 3 Tarif' }]
+            : [{ key: 'tarif_acuan_provinsi', label: 'Tarif Acuan Provinsi', required: true }]
+          ),
+          { key: 'catatan', label: 'Catatan' },
+        ]}
+        onSuccess={() => router.refresh()}
+      />
     </div>
   )
 }
