@@ -104,13 +104,17 @@ export async function POST(req: NextRequest) {
       bab_label: b.bab_label,
       bab_type: b.bab_type,
       urutan: i + 1,
-      content_text: b.content_text.substring(0, 10000), // limit untuk storage
+      content_text: b.content_text.substring(0, 10000),
       content_hash: babHashes[b.bab_id],
       placeholder_keys: b.placeholder_keys,
       is_active: true,
     }))
     if (babRows.length > 0) {
-      await supabaseAdmin.from('wpa_template_bab').insert(babRows)
+      const { error: babInsertErr } = await supabaseAdmin.from('wpa_template_bab').insert(babRows)
+      if (babInsertErr) {
+        console.error('Bab insert error:', babInsertErr)
+        // Continue anyway, placeholder sudah ada
+      }
     }
     
     // 10. Insert placeholder dengan klasifikasi otomatis
