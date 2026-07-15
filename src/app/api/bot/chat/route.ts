@@ -12,7 +12,7 @@ const ROLE_CONTEXT: Record<string, string> = {
 }
 
 const APP_CONTEXT = `
-Konteks Aplikasi WPA — Workforce PKS Application BPJS Ketenagakerjaan:
+Konteks Aplikasi Mitra PLKK — Platform pengelolaan kerjasama BPJS Ketenagakerjaan dengan Faskes PLKK:
 - Tujuan: manajemen PKS PLKK (Pusat Layanan Kecelakaan Kerja) antara BPJS Ketenagakerjaan dengan Faskes.
 - Fitur utama:
   1. Onboarding Faskes Baru: pengajuan → tinjauan surat → kredensialing (checklist SIP/STR/Akta/Izin) → negosiasi tarif → drafting PKS → tanda tangan.
@@ -54,7 +54,7 @@ function fallbackResponse(message: string, role: string) {
   const actions = actionsByRole[role] || []
   
   if (/halo|hai|selamat/.test(msg)) {
-    return { content: `Halo! Saya asisten virtual WPA. Senang membantu Anda. Apa yang bisa saya bantu hari ini?`, actions: actions.slice(0, 3) }
+    return { content: `Halo! Saya asisten virtual Mitra PLKK. Senang membantu Anda. Apa yang bisa saya bantu hari ini?`, actions: actions.slice(0, 3) }
   }
   if (/pks baru|buat pks|draft pks/.test(msg)) {
     return { 
@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
     
     try {
       const roleContext = ROLE_CONTEXT[role] || ROLE_CONTEXT.case_manager
-      const systemPrompt = `${APP_CONTEXT}\n\nAnda adalah Resepsionis WPA — asisten virtual yang membantu pengguna aplikasi.\nKonteks user saat ini: ${roleContext}\n\nJawab singkat (max 3 paragraf), ramah, dalam Bahasa Indonesia. Jika user tanya langkah, jawab step-by-step dengan nomor.`
+      const systemPrompt = `${APP_CONTEXT}\n\nAnda adalah Resepsionis Mitra PLKK — asisten virtual yang membantu pengguna aplikasi.\nKonteks user saat ini: ${roleContext}\n\nJawab singkat (max 3 paragraf), ramah, dalam Bahasa Indonesia. Jika user tanya langkah, jawab step-by-step dengan nomor.`
       
       const contents = [
         { role: 'user', parts: [{ text: systemPrompt }] },

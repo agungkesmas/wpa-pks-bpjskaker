@@ -260,7 +260,7 @@ export async function GET(req: NextRequest) {
   </div>
   
   <div class="footer-note">
-    WPA — Workforce PKS Application BPJS Ketenagakerjaan | Dokumen ini dicetak pada ${new Date().toLocaleString('id-ID')}
+    Mitra PLKK — BPJS Ketenagakerjaan | Dokumen ini dicetak pada ${new Date().toLocaleString('id-ID')}
   </div>
 </div>
 <script>

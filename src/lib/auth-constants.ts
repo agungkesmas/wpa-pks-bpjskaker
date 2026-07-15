@@ -1,4 +1,4 @@
-// Constants & types — Manajemen PLKK (6 role final)
+// Constants & types — Mitra PLKK (6 role final)
 // JANGAN import next/headers di file ini.
 
 export type UserRole = 'super_admin' | 'kepala_bidang' | 'case_manager' | 'penata_pelayanan' | 'pic_rs' | 'legal_rs'

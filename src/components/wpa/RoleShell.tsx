@@ -114,7 +114,7 @@ export function RoleShell({ user, kantor_nama, notifications = [], children }: R
         <div className="flex items-center gap-2 text-white">
           <ShieldCheck className="w-6 h-6" />
           <div>
-            <div className="font-bold text-sm">Manajemen PLKK</div>
+            <div className="font-bold text-sm">Mitra PLKK</div>
             <div className="text-[10px] opacity-75">BPJS Ketenagakerjaan</div>
           </div>
         </div>
@@ -191,7 +191,7 @@ export function RoleShell({ user, kantor_nama, notifications = [], children }: R
           </Sheet>
           <div className="flex-1">
             <h2 className="text-base lg:text-lg font-semibold text-slate-900">
-              {nav.find(n => pathname === n.href || (n.href !== `/${user.role}` && pathname.startsWith(n.href)))?.label || 'Manajemen PLKK'}
+              {nav.find(n => pathname === n.href || (n.href !== `/${user.role}` && pathname.startsWith(n.href)))?.label || 'Mitra PLKK'}
             </h2>
           </div>
           <div className="relative">

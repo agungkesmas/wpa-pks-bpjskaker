@@ -38,7 +38,7 @@ export default async function SuperAdminDashboard() {
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Dashboard Super Admin</h1>
         <p className="text-sm text-slate-600">
-          Halo {me?.full_name}. Anda memiliki akses penuh ke sistem Manajemen PLKK lintas cabang.
+          Halo {me?.full_name}. Anda memiliki akses penuh ke sistem Mitra PLKK lintas cabang.
         </p>
       </div>
       

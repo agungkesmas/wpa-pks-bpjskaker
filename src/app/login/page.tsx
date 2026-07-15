@@ -79,17 +79,17 @@ function LoginContent() {
             <ShieldCheck className="w-7 h-7" />
           </div>
           <div>
-            <div className="font-bold text-xl tracking-tight">WPA</div>
-            <div className="text-blue-200 text-xs">PKS BPJS Ketenagakerjaan</div>
+            <div className="font-bold text-xl tracking-tight">Mitra PLKK</div>
+            <div className="text-blue-200 text-xs">BPJS Ketenagakerjaan</div>
           </div>
         </div>
         <div className="my-8 lg:my-0">
           <h1 className="text-3xl lg:text-5xl font-bold leading-tight mb-4">
-            Manajemen PKS<br/>Pusat Layanan<br/>Kecelakaan Kerja
+            Mitra PLKK<br/>Sahabat Pengelolaan<br/>Kerjasama Faskes
           </h1>
           <p className="text-blue-100 text-base lg:text-lg max-w-md">
-            Platform terpadu untuk pengelolaan Perjanjian Kerja Sama BPJS Ketenagakerjaan 
-            dengan Faskes PLKK — dari onboarding, drafting, adendum, hingga perpanjangan.
+            Platform terpadu pengelolaan kerjasama BPJS Ketenagakerjaan dengan Faskes Pusat Layanan 
+            Kecelakaan Kerja — dari onboarding, PKS, pembinaan, sosialisasi, hingga perpanjangan.
           </p>
           <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-lg">
             <div className="bg-white/10 backdrop-blur rounded-lg p-3">
@@ -99,8 +99,8 @@ function LoginContent() {
             </div>
             <div className="bg-white/10 backdrop-blur rounded-lg p-3">
               <HeartPulse className="w-5 h-5 mb-2 text-orange-300" />
-              <div className="text-xs font-semibold">Onboarding Faskes</div>
-              <div className="text-[10px] text-blue-200">Pengajuan → kredensialing → PKS</div>
+              <div className="text-xs font-semibold">Pembinaan & Sosialisasi</div>
+              <div className="text-[10px] text-blue-200">Visitasi, SP, surat edaran</div>
             </div>
             <div className="bg-white/10 backdrop-blur rounded-lg p-3">
               <ShieldCheck className="w-5 h-5 mb-2 text-yellow-300" />
@@ -110,7 +110,7 @@ function LoginContent() {
           </div>
         </div>
         <div className="text-xs text-blue-200">
-          © 2026 BPJS Ketenagakerjaan — Workforce PKS Application
+          © 2026 BPJS Ketenagakerjaan — Mitra PLKK
         </div>
       </div>
 
@@ -121,7 +121,7 @@ function LoginContent() {
             <CardHeader>
               <CardTitle className="text-2xl text-slate-900">Masuk</CardTitle>
               <CardDescription>
-                Gunakan akun yang telah dibuatkan oleh Admin Kantor.
+                Gunakan akun yang telah dibuatkan oleh Admin/Kepala Bidang.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -179,7 +179,7 @@ function LoginContent() {
               </form>
               <div className="mt-6 pt-4 border-t border-slate-200 text-xs text-slate-500">
                 <p className="font-semibold mb-1">Akun default (setelah setup):</p>
-                <p>Email: <code className="bg-slate-100 px-1 rounded">admin@wpa.local</code></p>
+                <p>Email: <code className="bg-slate-100 px-1 rounded">super.admin@wpa.local</code></p>
                 <p>Password: diatur via env <code className="bg-slate-100 px-1 rounded">DEFAULT_ADMIN_PWD</code></p>
                 <p className="mt-2 text-slate-400">
                   Demi keamanan, ganti password setelah login pertama.

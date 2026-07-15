@@ -58,7 +58,7 @@ function fallbackResponse(message: string, role: string): { content: string; act
   
   if (/halo|hai|selamat/.test(msg)) {
     return {
-      content: `Halo! Saya asisten virtual WPA. Senang membantu ${ROLE_LABELS[role as keyof typeof ROLE_LABELS]}. Apa yang bisa saya bantu hari ini?`,
+      content: `Halo! Saya asisten virtual Mitra PLKK. Senang membantu ${ROLE_LABELS[role as keyof typeof ROLE_LABELS]}. Apa yang bisa saya bantu hari ini?`,
       actions: actions.slice(0, 3),
     }
   }
@@ -94,7 +94,7 @@ function fallbackResponse(message: string, role: string): { content: string; act
   }
   if (/bantuan|help|apa ini|bagaimana|tutorial/.test(msg)) {
     return {
-      content: `WPA adalah sistem manajemen PKS BPJS Ketenagakerjaan. Sebagai ${ROLE_LABELS[role as keyof typeof ROLE_LABELS]}, Anda bisa:\n• Kelola PKS & adendum\n• Onboarding faskes baru\n• Proses dropping pusat\n• Komparasi tarif kewajaran\n\nPilih quick action di bawah atau ketik pertanyaan Anda.`,
+      content: `Mitra PLKK adalah platform pengelolaan kerjasama BPJS Ketenagakerjaan dengan Faskes PLKK. Sebagai ${ROLE_LABELS[role as keyof typeof ROLE_LABELS]}, Anda bisa:\n• Kelola PKS & adendum\n• Onboarding faskes baru\n• Proses dropping pusat\n• Pembinaan & sosialisasi faskes\n• Komparasi tarif kewajaran\n\nPilih quick action di bawah atau ketik pertanyaan Anda.`,
       actions: actions.slice(0, 4),
     }
   }
@@ -117,7 +117,7 @@ export function BotReceptionist({ user }: BotReceptionistProps) {
     if (open && messages.length === 0) {
       setMessages([{
         role: 'assistant',
-        content: `Halo ${user.full_name}! 👋 Saya Resepsionis WPA. Saya bisa membantu Anda navigasi aplikasi, menjelaskan fitur, atau memandu langkah demi langkah. Apa yang ingin Anda lakukan hari ini?`,
+        content: `Halo ${user.full_name}! 👋 Saya Resepsionis Mitra PLKK. Saya bisa membantu Anda navigasi aplikasi, menjelaskan fitur, atau memandu langkah demi langkah. Apa yang ingin Anda lakukan hari ini?`,
         actions: QUICK_ACTIONS[user.role]?.slice(0, 4) || [],
       }])
     }
@@ -186,7 +186,7 @@ export function BotReceptionist({ user }: BotReceptionistProps) {
                 <Sparkles className="w-4 h-4" />
               </div>
               <div>
-                <div className="text-sm font-semibold">Resepsionis WPA</div>
+                <div className="text-sm font-semibold">Resepsionis Mitra PLKK</div>
                 <div className="text-[10px] opacity-80">Asisten virtual · Online</div>
               </div>
             </div>

@@ -29,7 +29,7 @@ export async function GET() {
   
   // Add header note row (instructions)
   const wsNotes = XLSX.utils.aoa_to_sheet([
-    ['Template Upload Tarif Faskes — WPA BPJS Ketenagakerjaan'],
+    ['Template Upload Tarif Faskes — Mitra PLKK BPJS Ketenagakerjaan'],
     [''],
     ['Instruksi:'],
     ['1. Isi kolom tarif (rupiah) untuk setiap item yang tersedia di faskes Anda'],

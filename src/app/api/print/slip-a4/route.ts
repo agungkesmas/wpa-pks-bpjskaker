@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
             <div class="logo">BPJS</div>
             <div class="brand">
               <div class="brand-name">BPJS KETENAGAKERJAAN</div>
-              <div class="brand-sub">Workforce PKS Application (WPA)</div>
+              <div class="brand-sub">Mitra PLKK — BPJS Ketenagakerjaan</div>
             </div>
             <div class="doc-meta">
               <div>Slip Akun Pengguna</div>
@@ -76,7 +76,7 @@ export async function GET(req: NextRequest) {
           
           <div class="content">
             <h2 class="title">Selamat Datang, ${u.full_name}!</h2>
-            <p class="subtitle">Berikut detail akun Anda untuk mengakses aplikasi WPA:</p>
+            <p class="subtitle">Berikut detail akun Anda untuk mengakses aplikasi Mitra PLKK:</p>
             
             <table class="info-table">
               <tr><td>Nama Lengkap</td><td>: <strong>${u.full_name}</strong></td></tr>
@@ -92,7 +92,7 @@ export async function GET(req: NextRequest) {
             <div class="instructions">
               <h3>Instruksi Login:</h3>
               <ol>
-                <li>Buka aplikasi WPA di <strong>https://wpa-pks-bpjskaker.vercel.app</strong></li>
+                <li>Buka aplikasi Mitra PLKK di <strong>https://mitra-plkk.vercel.app</strong></li>
                 <li>Masukkan <strong>Email</strong> dan <strong>Password Sementara</strong> di atas</li>
                 <li>Setelah login, segera ubah password Anda via menu <strong>Profil Saya → Ubah Password</strong></li>
                 <li>Password baru minimal 8 karakter, mengandung huruf besar, huruf kecil, dan angka</li>
@@ -111,7 +111,7 @@ export async function GET(req: NextRequest) {
           </div>
           
           <div class="page-footer">
-            WPA — Workforce PKS Application BPJS Ketenagakerjaan | Halaman 1 dari 1
+            Mitra PLKK — BPJS Ketenagakerjaan | Halaman 1 dari 1
           </div>
         </div>
       `

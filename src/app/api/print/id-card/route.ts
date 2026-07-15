@@ -70,7 +70,7 @@ export async function GET(req: NextRequest) {
               <div class="logo">BPJS</div>
               <div class="brand">
                 <div class="brand-name">BPJS KETENAGAKERJAAN</div>
-                <div class="brand-sub">WPA — PKS Management</div>
+                <div class="brand-sub">Mitra PLKK — BPJS Ketenagakerjaan</div>
               </div>
             </div>
             <div class="body">
