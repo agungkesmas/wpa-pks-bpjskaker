@@ -808,3 +808,53 @@ Stage Summary:
 - ✅ Tables dengan overflow-x-auto (tidak break layout)
 - ✅ Forms mobile accessible
 - ✅ Cards-based UI untuk mobile-friendly
+
+---
+Task ID: REBRAND-MITRA-PLKK
+Agent: main
+Task: Rebrand ke Mitra PLKK + audit konsistensi UI lintas role
+
+Work Log:
+- Vercel project: manajemen-plkk → mitra-plkk (rename)
+- Domain swap final:
+  • mitra-plkk.vercel.app → LIVE (HTTP 200) — URL PRODUKSI FINAL
+  • manajemen-plkk.vercel.app → 404 (dimatikan)
+  • wpa-pks-bpjskaker.vercel.app → 404 (dimatikan)
+- Rebranding lengkap (11 file diupdate):
+  • App title: 'WPA — PKS BPJS Ketenagakerjaan' → 'Mitra PLKK — BPJS Ketenagakerjaan'
+  • Layout metadata: updated
+  • Login page: hero 'Mitra PLKK Sahabat Pengelolaan Kerjasama Faskes'
+    + feature card 'Pembinaan & Sosialisasi' (visitasi, SP, surat edaran)
+  • RoleShell sidebar: 'Manajemen PLKK' → 'Mitra PLKK'
+  • Bot resepsionis: 'Resepsionis Mitra PLKK' (UI + API + APP_CONTEXT)
+  • Print (id-card, slip-a4, kartu-mutasi): 'Mitra PLKK — BPJS Ketenagakerjaan'
+  • URL di slip A4: 'https://mitra-plkk.vercel.app'
+  • Tarif Excel template: 'Mitra PLKK BPJS Ketenagakerjaan'
+- Audit konsistensi UI lintas role (1 tampilan untuk semua role):
+  • 6 dashboard pakai struktur sama: H1 + subtitle + stats grid + Aksi Cepat card
+  • RoleShell: 1 komponen reusable (sidebar 256px, header 61px, main flex-1)
+  • RoleLayout: 1 komponen dengan allowedRole parameter
+  • ROLE_LABELS & ROLE_THEMES: konsisten 6 role dengan tema warna berbeda
+  • Standar bahasa baku: konsisten lintas role (Diajukan/Ditinjau/Setujui/Tolak/Ambil Alih)
+
+Test e2e via API + Agent Browser:
+- 6 role login sukses di URL baru (mitra-plkk.vercel.app)
+- Login page branding 'Mitra PLKK' tampil konsisten desktop + mobile
+- Super Admin dashboard: sidebar 'Mitra PLKK', 6 menu, stats grid
+- PIC RS dashboard: sidebar 'Mitra PLKK', 5 menu (incl. Ajukan PKS Baru)
+- CM Cirebon dashboard: sidebar 'Mitra PLKK', 5 menu, layout sama persis
+- Bot resepsionis: 'Resepsionis Mitra PLKK' branding
+- Mobile view (375px): full adaptif, sidebar via Sheet
+- Konsistensi struktur: sidebar 256px + header 61px + main flex-1 di semua role
+
+Audit clean:
+- Tidak ada referensi 'WPA' (kecuali nama akun email @wpa.local)
+- Tidak ada 'Workforce PKS Application'
+- Tidak ada URL lama (wpa-pks-bpjskaker, manajemen-plkk)
+
+Stage Summary:
+- ✅ URL FINAL: https://mitra-plkk.vercel.app (URL lama dimatikan total)
+- ✅ Branding 'Mitra PLKK' konsisten di: title, login, sidebar, bot, print, Excel template
+- ✅ 1 tampilan UI untuk 6 role (konsistensi layout, struktur, bahasa)
+- ✅ Mobile responsive verified (desktop/tablet/mobile)
+- ✅ 6 role login sukses di URL baru
