@@ -23,8 +23,9 @@ const TAHAP_FLOW: Record<string, { current: string; next: string; handler_role: 
   ],
   perpanjangan: [
     { current: 'diajukan', next: 'ditinjau', handler_role: 'case_manager' },
-    { current: 'ditinjau', next: 'negosiasi_tarif', handler_role: 'case_manager' },
-    { current: 'negosiasi_tarif', next: 'drafting_pks', handler_role: 'case_manager' },
+    { current: 'ditinjau', next: 'kredensialing_ulang', handler_role: 'case_manager' },
+    { current: 'kredensialing_ulang', next: 'tinjauan_tarif', handler_role: 'case_manager' },
+    { current: 'tinjauan_tarif', next: 'drafting_pks', handler_role: 'case_manager' },
     { current: 'drafting_pks', next: 'approval_kabid', handler_role: 'kepala_bidang' },
     { current: 'approval_kabid', next: 'review_legal_rs', handler_role: 'legal_rs' },
     { current: 'review_legal_rs', next: 'tanda_tangan', handler_role: 'kepala_bidang' },

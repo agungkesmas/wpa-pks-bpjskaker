@@ -4,13 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { Plus, Inbox, FileSignature, Wallet, ShieldCheck, AlertCircle, Clock, ArrowRight, Building2, Calendar } from 'lucide-react'
+import { Plus, Inbox, FileSignature, Wallet, ShieldCheck, AlertCircle, Clock, ArrowRight, Building2, Calendar, FileText } from 'lucide-react'
+import { AjukanPerpanjanganButton } from '@/components/wpa/AjukanPerpanjanganButton'
 
 export default async function PICRSDashboard() {
   const me = await getSession()
   if (!me) return null
   
-  // Check if user has faskes attached (account state)
   const { data: userFaskes } = await supabaseAdmin
     .from('wpa_user_faskes')
     .select('id, faskes_id, is_primary, wpa_faskes(id, nama, jenis, status)')
@@ -18,7 +18,6 @@ export default async function PICRSDashboard() {
   
   const isTemporary = !userFaskes || userFaskes.length === 0
   
-  // Get active PKS for this faskes
   let pksAktif: any = null
   if (userFaskes && userFaskes.length > 0) {
     const faskesId = userFaskes[0].faskes_id
@@ -33,7 +32,6 @@ export default async function PICRSDashboard() {
     pksAktif = pks
   }
   
-  // Get my active pengajuan
   const { data: myPengajuan } = await supabaseAdmin
     .from('wpa_pipeline')
     .select('id, jenis, current_tahap, sla_deadline, initiated_at')
@@ -41,10 +39,22 @@ export default async function PICRSDashboard() {
     .eq('status', 'in_progress')
     .order('initiated_at', { ascending: false })
   
-  // Calculate days left for PKS
   let daysLeft: number | null = null
   if (pksAktif?.tanggal_berakhir) {
     daysLeft = Math.ceil((new Date(pksAktif.tanggal_berakhir).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+  }
+  
+  // Check if perpanjangan already in progress
+  let perpanjanganInProgress = false
+  if (pksAktif) {
+    const { data: existingPipeline } = await supabaseAdmin
+      .from('wpa_pipeline')
+      .select('id, status')
+      .eq('pks_id', pksAktif.id)
+      .eq('jenis', 'perpanjangan')
+      .eq('status', 'in_progress')
+      .maybeSingle()
+    if (existingPipeline) perpanjanganInProgress = true
   }
   
   return (
@@ -53,12 +63,12 @@ export default async function PICRSDashboard() {
         <h1 className="text-2xl font-bold text-slate-900">Dashboard PIC RS</h1>
         <p className="text-sm text-slate-600">
           Halo {me.full_name}. {isTemporary 
-            ? 'Akun Anda belum terasosiasi ke faskes. Silakan Ajukan PKS Baru untuk faskes Anda.'
+            ? 'Akun Anda belum terasosiasi ke faskes. Silakan Ajukan PKS Baru.'
             : `Status PKS & aktivitas faskes ${userFaskes[0].wpa_faskes?.nama}.`}
         </p>
       </div>
       
-      {/* PKS Status Card (jika sudah ada) */}
+      {/* PKS Status Card */}
       {pksAktif ? (
         <Card className={daysLeft !== null && daysLeft <= 90 ? 'border-yellow-300 bg-yellow-50' : 'border-green-300 bg-green-50'}>
           <CardContent className="p-6">
@@ -76,12 +86,11 @@ export default async function PICRSDashboard() {
                   <>
                     <div className={`text-4xl font-bold ${daysLeft < 14 ? 'text-red-700' : daysLeft < 30 ? 'text-orange-700' : daysLeft < 90 ? 'text-yellow-700' : 'text-green-700'}`}>{daysLeft}</div>
                     <div className="text-xs text-slate-500">hari lagi</div>
-                    {daysLeft <= 90 && (
-                      <Link href="/pic_rs/ajukan-baru?jenis=perpanjangan">
-                        <Button size="sm" className="bg-orange-600 hover:bg-orange-700 mt-2">
-                          <Plus className="w-3 h-3 mr-1" /> Ajukan Perpanjangan
-                        </Button>
-                      </Link>
+                    {daysLeft <= 90 && !perpanjanganInProgress && (
+                      <AjukanPerpanjanganButton pksId={pksAktif.id} />
+                    )}
+                    {perpanjanganInProgress && (
+                      <Badge className="bg-blue-100 text-blue-800 mt-2">Perpanjangan dalam proses</Badge>
                     )}
                   </>
                 )}
@@ -95,7 +104,7 @@ export default async function PICRSDashboard() {
             <Building2 className="w-10 h-10 text-orange-600 mx-auto mb-3" />
             <h3 className="text-lg font-semibold text-slate-900 mb-2">Belum Ada Faskes Terdaftar</h3>
             <p className="text-sm text-slate-600 mb-4">
-              Akun Anda belum terasosiasi ke faskes manapun. Silakan ajukan PKS baru untuk faskes Anda.
+              Akun Anda belum terasosiasi ke faskes. Silakan ajukan PKS baru.
             </p>
             <Link href="/pic_rs/ajukan-baru">
               <Button className="bg-orange-600 hover:bg-orange-700">
@@ -168,12 +177,8 @@ export default async function PICRSDashboard() {
             <Link href="/pic_rs/pengajuan"><Button variant="outline" className="w-full justify-start"><Inbox className="w-4 h-4 mr-2" /> Pengajuan Saya</Button></Link>
             <Link href="/pic_rs/dokumen"><Button variant="outline" className="w-full justify-start"><FileSignature className="w-4 h-4 mr-2" /> Dokumen Saya</Button></Link>
             <Link href="/pic_rs/tarif"><Button variant="outline" className="w-full justify-start"><Wallet className="w-4 h-4 mr-2" /> Bank Tarif</Button></Link>
-            {daysLeft !== null && daysLeft <= 90 && (
-              <Link href="/pic_rs/ajukan-baru?jenis=perpanjangan">
-                <Button className="w-full bg-yellow-600 hover:bg-yellow-700">
-                  <Calendar className="w-4 h-4 mr-2" /> Ajukan Perpanjangan
-                </Button>
-              </Link>
+            {daysLeft !== null && daysLeft <= 90 && !perpanjanganInProgress && pksAktif && (
+              <AjukanPerpanjanganButton pksId={pksAktif.id} variant="quickAction" />
             )}
           </div>
         </CardContent>
