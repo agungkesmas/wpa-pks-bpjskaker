@@ -11,8 +11,33 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const { data: pipeline, error } = await supabaseAdmin
       .from('wpa_pipeline')
       .select(`
-        *,
-        wpa_faskes(*),
+        id,
+        jenis,
+        current_tahap,
+        status,
+        sla_deadline,
+        sla_breached,
+        current_handler_id,
+        handler_since,
+        takeover_enabled,
+        takeover_enabled_by,
+        takeover_enabled_at,
+        takeover_reason,
+        cabang_owned,
+        initiated_by,
+        initiated_at,
+        completed_at,
+        created_at,
+        updated_at,
+        reference_id,
+        reference_type,
+        kantor_cabang_id,
+        faskes_id,
+        pks_id,
+        template_id,
+        pdf_generated_url,
+        dropping_batch_id,
+        wpa_faskes(nama, jenis, tipe, kota, alamat, penanggung_jawab_nama, status),
         wpa_kantor_cabang(nama, kode, alamat, kota, telp)
       `)
       .eq('id', id)
@@ -48,7 +73,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       supabaseAdmin.from('wpa_pipeline_tahap_config')
         .select('*').eq('jenis_pipeline', pipeline.jenis).order('urutan', { ascending: true }),
       supabaseAdmin.from('wpa_pengajuan_dokumen')
-        .select('*').eq('pipeline_id', id).order('uploaded_at', { ascending: false }),
+        .select('id, jenis, file_name, file_url, file_size, mime_type, uploaded_by, uploaded_at, verified, verified_by, verified_at, catatan')
+        .eq('pipeline_id', id).order('uploaded_at', { ascending: false }),
       supabaseAdmin.from('wpa_pipeline_access_control')
         .select('id, action, performed_by, performed_at, reason, wpa_users(email, full_name, role)')
         .eq('pipeline_id', id).order('performed_at', { ascending: true }),
@@ -77,7 +103,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         logs: logsRes.data || [],
         tahap_config: tahapRes.data || [],
         documents: docsRes.data || [],
-        wpa_pengajuan_dokumen: docsRes.data || [],  // alias for PipelineDetailView
         access_logs: aclRes.data || [],
         wpa_pipeline_placeholder_values: placeholderValues,
         wpa_pks_template: templateInfo,

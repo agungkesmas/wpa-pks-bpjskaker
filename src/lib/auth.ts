@@ -2,6 +2,7 @@ import { supabaseAdmin } from '@/lib/supabase'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { cookies } from 'next/headers'
+import { cache } from 'react'
 import type { UserRole, AuthUser } from '@/lib/auth-constants'
 
 export type { UserRole, AuthUser }
@@ -58,7 +59,9 @@ export function verifyToken(token: string): AuthUser | null {
   }
 }
 
-export async function getSession(): Promise<AuthUser | null> {
+// Cached version — within a single request, multiple getSession() calls share one DB hit
+// (Penting: cache() dari React 19 hanya bekerja dalam satu request scope, tidak cross-request)
+export const getSession = cache(async (): Promise<AuthUser | null> => {
   const cookieStore = await cookies()
   const token = cookieStore.get(COOKIE_NAME)?.value
   if (!token) return null
@@ -71,9 +74,9 @@ export async function getSession(): Promise<AuthUser | null> {
     .select('id, email, full_name, role, kantor_cabang_id, faskes_id, phone, nip, profile_photo_url, must_change_password, is_active, last_login_at')
     .eq('id', user.id)
     .single()
-  
+
   if (error || !data || !data.is_active) return null
-  
+
   return {
     id: data.id,
     email: data.email,
@@ -86,7 +89,7 @@ export async function getSession(): Promise<AuthUser | null> {
     profile_photo_url: data.profile_photo_url || null,
     must_change_password: data.must_change_password || false,
   }
-}
+})
 
 export async function setSessionCookie(token: string) {
   const cookieStore = await cookies()

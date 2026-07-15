@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import dynamic from 'next/dynamic'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,7 +10,20 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Loader2, Save, FileText, CheckCircle2, AlertCircle, Lock, Sparkles, Printer } from 'lucide-react'
 import { toast } from 'sonner'
-import { DocumentEditor } from '@/components/wpa/DocumentEditor'
+
+// Lazy load DocumentEditor (TipTap ~500KB) — hanya saat user edit dokumen
+const DocumentEditor = dynamic(
+  () => import('@/components/wpa/DocumentEditor').then(m => ({ default: m.DocumentEditor })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+        <span className="ml-2 text-sm text-slate-500">Memuat editor...</span>
+      </div>
+    ),
+  }
+)
 
 interface Placeholder {
   id: string

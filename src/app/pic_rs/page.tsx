@@ -11,41 +11,46 @@ import { AjukanPerpanjanganButton } from '@/components/wpa/AjukanPerpanjanganBut
 export default async function PICRSDashboard() {
   const me = await getSession()
   if (!me) return null
-  
+
+  // Fetch userFaskes dulu (butuh untuk query selanjutnya)
   const { data: userFaskes } = await supabaseAdmin
     .from('wpa_user_faskes')
     .select('id, faskes_id, is_primary, wpa_faskes(id, nama, jenis, status)')
     .eq('user_id', me.id)
-  
+
   const isTemporary = !userFaskes || userFaskes.length === 0
-  
-  let pksAktif: any = null
-  if (userFaskes && userFaskes.length > 0) {
-    const faskesId = userFaskes[0].faskes_id
-    const { data: pks } = await supabaseAdmin
-      .from('wpa_pks')
-      .select('id, kode_pks_pihak_pertama, tanggal_mulai, tanggal_berakhir, status')
-      .eq('faskes_id', faskesId)
-      .eq('status', 'ditandatangani')
-      .order('tanggal_berakhir', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-    pksAktif = pks
-  }
-  
-  const { data: myPengajuan } = await supabaseAdmin
-    .from('wpa_pipeline')
-    .select('id, jenis, current_tahap, sla_deadline, initiated_at')
-    .eq('initiated_by', me.id)
-    .eq('status', 'in_progress')
-    .order('initiated_at', { ascending: false })
-  
+  const faskesId = userFaskes && userFaskes.length > 0 ? userFaskes[0].faskes_id : null
+
+  // Parallel: myPengajuan (by me.id) + pksAktif (by faskesId, kalau ada)
+  // (sebelumnya sequential — bisa hemat 200-300ms)
+  const [myPengajuanRes, pksAktifRes] = await Promise.all([
+    supabaseAdmin
+      .from('wpa_pipeline')
+      .select('id, jenis, current_tahap, sla_deadline, initiated_at')
+      .eq('initiated_by', me.id)
+      .eq('status', 'in_progress')
+      .order('initiated_at', { ascending: false }),
+    faskesId
+      ? supabaseAdmin
+          .from('wpa_pks')
+          .select('id, kode_pks_pihak_pertama, tanggal_mulai, tanggal_berakhir, status')
+          .eq('faskes_id', faskesId)
+          .eq('status', 'ditandatangani')
+          .order('tanggal_berakhir', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+  ])
+
+  const myPengajuan = myPengajuanRes.data || []
+  const pksAktif: any = pksAktifRes.data
+
   let daysLeft: number | null = null
   if (pksAktif?.tanggal_berakhir) {
     daysLeft = Math.ceil((new Date(pksAktif.tanggal_berakhir).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
   }
-  
-  // Check if perpanjangan already in progress
+
+  // Check if perpanjangan already in progress (butuh pksAktif.id — sequential OK)
   let perpanjanganInProgress = false
   if (pksAktif) {
     const { data: existingPipeline } = await supabaseAdmin

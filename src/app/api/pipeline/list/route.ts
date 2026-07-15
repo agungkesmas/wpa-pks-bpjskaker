@@ -19,7 +19,20 @@ export async function GET(req: NextRequest) {
     let query = supabaseAdmin
       .from('wpa_pipeline')
       .select(`
-        *,
+        id,
+        jenis,
+        current_tahap,
+        status,
+        sla_deadline,
+        sla_breached,
+        current_handler_id,
+        handler_since,
+        takeover_enabled,
+        faskes_id,
+        kantor_cabang_id,
+        pks_id,
+        initiated_at,
+        updated_at,
         wpa_faskes(nama, jenis, tipe, kota),
         wpa_kantor_cabang(nama, kode)
       `)

@@ -2,10 +2,11 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import { usePathname, useRouter } from 'next/navigation'
-import { 
-  LayoutDashboard, FileSignature, Building2, Users, Settings, 
-  LogOut, Menu, X, Bell, Calendar, BarChart3, 
+import {
+  LayoutDashboard, FileSignature, Building2, Users, Settings,
+  LogOut, Menu, X, Bell, Calendar, BarChart3,
   FileText, ListChecks, Wallet, ChevronRight, ShieldCheck,
   Inbox, Plus, Briefcase, FolderOpen, FileEdit
 } from 'lucide-react'
@@ -15,7 +16,12 @@ import { Badge } from '@/components/ui/badge'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
 import { ROLE_LABELS, type UserRole } from '@/lib/auth-constants'
-import { BotReceptionist } from '@/components/bot/BotReceptionist'
+
+// Lazy load BotReceptionist (~100KB) — hanya saat user klik tombol chat
+const BotReceptionist = dynamic(
+  () => import('@/components/bot/BotReceptionist').then(m => ({ default: m.BotReceptionist })),
+  { ssr: false, loading: () => null }
+)
 
 export interface RoleShellProps {
   user: {

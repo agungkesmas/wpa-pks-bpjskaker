@@ -33,8 +33,13 @@ export function middleware(req: NextRequest) {
   if (process.env.NODE_ENV === 'production') {
     res.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload')
   }
-  // Prevent caching of authenticated pages
-  res.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, private')
+  // Cache strategy: HTML authenticated = no-store; API = short private cache (browser back/forward OK)
+  // (sebelumnya semua di-no-store, bikin browser re-fetch semua data navigasi)
+  if (pathname.startsWith('/api/')) {
+    res.headers.set('Cache-Control', 'private, max-age=5, stale-while-revalidate=30')
+  } else {
+    res.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, private')
+  }
   return res
 }
 

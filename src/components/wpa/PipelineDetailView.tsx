@@ -2,19 +2,33 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { DraftingPKSView } from '@/components/wpa/DraftingPKSView'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { 
-  Loader2, ArrowLeft, Clock, CheckCircle2, Circle, AlertCircle, 
+import {
+  Loader2, ArrowLeft, Clock, CheckCircle2, Circle, AlertCircle,
   ArrowRight, ArrowLeft as ArrowLeftIcon, XCircle, Hand, User, Calendar, FileText
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { TAHAP_LABELS } from '@/lib/wpa-constants'
+
+// Lazy load DraftingPKSView (berisi TipTap editor ~500KB) — hanya saat dibutuhkan
+const DraftingPKSView = dynamic(
+  () => import('@/components/wpa/DraftingPKSView').then(m => ({ default: m.DraftingPKSView })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+        <span className="ml-2 text-sm text-slate-500">Memuat editor...</span>
+      </div>
+    ),
+  }
+)
 
 interface PipelineData {
   id: string
@@ -32,7 +46,7 @@ interface PipelineData {
   wpa_kantor_cabang: { nama: string; kode: string } | null
   logs: any[]
   tahap_config: any[]
-  wpa_pengajuan_dokumen?: any[]
+  wpa_pengajuan_dokumen?: any[]  // alias — API returns as 'documents'
   wpa_pipeline_placeholder_values?: any[]
   wpa_pks_template?: any
 }
@@ -210,12 +224,12 @@ export function PipelineDetailView({ role, currentUserId }: Props) {
       )}
 
       {/* Dokumen yang diupload */}
-      {pipeline.wpa_pengajuan_dokumen && pipeline.wpa_pengajuan_dokumen.length > 0 && (
+      {(pipeline.wpa_pengajuan_dokumen || (pipeline as any).documents || []).length > 0 && (
         <Card>
-          <CardHeader><CardTitle className="text-base">Dokumen Pengajuan ({pipeline.wpa_pengajuan_dokumen.length})</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-base">Dokumen Pengajuan ({(pipeline.wpa_pengajuan_dokumen || (pipeline as any).documents).length})</CardTitle></CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {pipeline.wpa_pengajuan_dokumen.map((doc: any) => (
+              {(pipeline.wpa_pengajuan_dokumen || (pipeline as any).documents).map((doc: any) => (
                 <div key={doc.id} className="flex items-center justify-between p-2 rounded border border-slate-200">
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium truncate">{doc.file_name}</div>

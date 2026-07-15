@@ -2,22 +2,36 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { DocumentEditor } from '@/components/wpa/DocumentEditor'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { 
+import {
   Upload, FileText, Plus, Eye, Send, CheckCircle2, XCircle, Loader2,
   Building2, AlertCircle, Info, Download
 } from 'lucide-react'
 import { toast } from 'sonner'
+
+// Lazy load DocumentEditor (TipTap ~500KB) — hanya saat user edit dokumen
+const DocumentEditor = dynamic(
+  () => import('@/components/wpa/DocumentEditor').then(m => ({ default: m.DocumentEditor })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+        <span className="ml-2 text-sm text-slate-500">Memuat editor...</span>
+      </div>
+    ),
+  }
+)
 
 interface Template {
   id: string
