@@ -2,13 +2,25 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Loader2, Building2, Clock, AlertCircle, ChevronRight, Unlock, Lock, Info, User, FileText, Calendar, UserCircle, Search } from 'lucide-react'
 import { toast } from 'sonner'
 import { TAHAP_LABELS, JENIS_PENGAJUAN_SHORT } from '@/lib/wpa-constants'
+
+// Lazy load AdendumMasalGroupReview + DroppingPusatView (berat, hanya saat tab dibuka)
+const AdendumMasalGroupReview = dynamic(
+  () => import('./AdendumMasalGroupReview').then(m => ({ default: m.AdendumMasalGroupReview })),
+  { ssr: false, loading: () => <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-slate-400" /></div> }
+)
+const DroppingPusatView = dynamic(
+  () => import('./DroppingPusatView').then(m => ({ default: m.DroppingPusatView })),
+  { ssr: false, loading: () => <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-slate-400" /></div> }
+)
 
 interface Pipeline {
   id: string
@@ -75,6 +87,43 @@ function daysUntilExpired(dateStr: string | null): number | null {
 }
 
 export function TugasSayaView({ role, currentUserId }: Props) {
+  // Wrapper dengan tabs: Individual | Adendum Masal | Dropping Pusat
+  // Hanya CM & Kabid yang lihat semua tabs. PP hanya lihat "Individual"
+  const showAllTabs = role === 'case_manager' || role === 'kepala_bidang'
+
+  if (!showAllTabs) {
+    // PP: langsung tampilkan individual saja (tanpa tabs)
+    return <TugasIndividual role={role} currentUserId={currentUserId} />
+  }
+
+  return (
+    <Tabs defaultValue="individual" className="space-y-4">
+      <TabsList>
+        <TabsTrigger value="individual">Individual</TabsTrigger>
+        <TabsTrigger value="masal">Adendum Masal</TabsTrigger>
+        <TabsTrigger value="dropping">Dropping Pusat</TabsTrigger>
+      </TabsList>
+      <TabsContent value="individual">
+        <TugasIndividual role={role} currentUserId={currentUserId} />
+      </TabsContent>
+      <TabsContent value="masal">
+        {role === 'case_manager' ? (
+          <AdendumMasalGroupReview />
+        ) : (
+          <Card><CardContent className="p-8 text-center">
+            <Info className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+            <p className="text-sm text-slate-500">Adendum Masal hanya bisa di-review oleh Case Manager</p>
+          </CardContent></Card>
+        )}
+      </TabsContent>
+      <TabsContent value="dropping">
+        <DroppingPusatView role={role as any} />
+      </TabsContent>
+    </Tabs>
+  )
+}
+
+function TugasIndividual({ role, currentUserId }: Props) {
   const router = useRouter()
   const [list, setList] = useState<Pipeline[]>([])
   const [loading, setLoading] = useState(true)

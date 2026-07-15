@@ -49,8 +49,14 @@ const ROLE_THEMES: Record<UserRole, { sidebar: string; accent: string; text: str
 // ============================================================
 // MENU FINAL PER ROLE (Konsisten, Standar Bahasa Baku)
 // ============================================================
+// Prinsip: semua jenis pengajuan disatukan.
+// CM: "Tugas Saya" punya tabs (Individual | Adendum Masal | Dropping Pusat)
+// Kabid: "Tugas Cabang" punya tabs (Approval | Semua Tugas | Dropping Pusat)
+// PIC RS: "Buat Pengajuan" punya kartu pilihan (PKS Baru | Perpanjangan | Adendum | Adendum Masal)
+// PKS Baru (CM create user) = quick action di Dashboard, bukan menu terpisah
+// ============================================================
 const ROLE_NAV: Record<UserRole, { href: string; label: string; icon: any }[]> = {
-  // Super Admin (6 menu)
+  // Super Admin (7 menu — tambah Settings)
   super_admin: [
     { href: '/super_admin', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/super_admin/kantor', label: 'Kantor Cabang', icon: Building2 },
@@ -58,37 +64,33 @@ const ROLE_NAV: Record<UserRole, { href: string; label: string; icon: any }[]> =
     { href: '/super_admin/template', label: 'Template Mandatori', icon: FileText },
     { href: '/super_admin/pengajuan', label: 'Pengajuan', icon: Inbox },
     { href: '/super_admin/audit', label: 'Audit Log', icon: ListChecks },
+    { href: '/super_admin/settings', label: 'Settings', icon: Settings },
   ],
-  // Kepala Bidang (7 menu — tambah Settings)
+  // Kepala Bidang (5 menu — satukan Approval + Dropping ke Tugas Cabang)
   kepala_bidang: [
     { href: '/kepala_bidang', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/kepala_bidang/approval', label: 'Approval', icon: ShieldCheck },
-    { href: '/kepala_bidang/dropping', label: 'Dropping Pusat', icon: FileEdit },
-    { href: '/kepala_bidang/dokumen', label: 'Dokumen Legal', icon: FileSignature },
     { href: '/kepala_bidang/tugas', label: 'Tugas Cabang', icon: Briefcase },
+    { href: '/kepala_bidang/dokumen', label: 'Dokumen Legal', icon: FileSignature },
     { href: '/kepala_bidang/laporan', label: 'Laporan', icon: BarChart3 },
     { href: '/kepala_bidang/settings', label: 'Settings', icon: Settings },
   ],
-  // Case Manager (9 menu — tambah Settings)
+  // Case Manager (6 menu — satukan Adendum Masal + Dropping ke Tugas Saya, PKS Baru → quick action)
   case_manager: [
     { href: '/case_manager', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/case_manager/tugas', label: 'Tugas Saya', icon: Briefcase },
-    { href: '/case_manager/pks-baru', label: 'PKS Baru', icon: Plus },
-    { href: '/case_manager/adendum-masal', label: 'Adendum Masal', icon: FileEdit },
-    { href: '/case_manager/dropping', label: 'Dropping Pusat', icon: FileEdit },
     { href: '/case_manager/faskes', label: 'Faskes Mitra', icon: Building2 },
     { href: '/case_manager/dokumen-operasional', label: 'Dokumen Operasional', icon: FileText },
     { href: '/case_manager/tarif', label: 'Bank Tarif', icon: Wallet },
     { href: '/case_manager/settings', label: 'Settings', icon: Settings },
   ],
-  // Penata Pelayanan (4 menu — tambah Dokumen Operasional)
+  // Penata Pelayanan (4 menu)
   penata_pelayanan: [
     { href: '/penata_pelayanan', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/penata_pelayanan/tugas', label: 'Tugas Saya', icon: Briefcase },
     { href: '/penata_pelayanan/faskes', label: 'Faskes Mitra', icon: Building2 },
     { href: '/penata_pelayanan/dokumen-operasional', label: 'Dokumen Operasional', icon: FileText },
   ],
-  // PIC RS (5 menu)
+  // PIC RS (5 menu — sudah konsisten)
   pic_rs: [
     { href: '/pic_rs', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/pic_rs/ajukan-baru', label: 'Buat Pengajuan', icon: Plus },

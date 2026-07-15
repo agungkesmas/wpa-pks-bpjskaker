@@ -1,9 +1,13 @@
-import { getSession } from '@/lib/auth'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Placeholder } from '@/components/wpa/Placeholder'
+import { AISettingsManager } from '@/components/wpa/AISettingsManager'
 
-export default async function SettingsPage() {
-  const me = await getSession()
-  if (!me) return null
-  return <Placeholder title="Pengaturan Sistem" description="Konfigurasi global: toggle self-register, default values, integrasi." />
+export default function SuperAdminSettingsPage() {
+  return (
+    <div className="space-y-6 max-w-4xl mx-auto">
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900">Settings</h1>
+        <p className="text-sm text-slate-600">Kelola pengaturan aplikasi.</p>
+      </div>
+      <AISettingsManager />
+    </div>
+  )
 }

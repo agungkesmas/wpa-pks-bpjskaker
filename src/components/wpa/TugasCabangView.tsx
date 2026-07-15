@@ -2,13 +2,21 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Loader2, Building2, Clock, AlertCircle, Unlock, Lock, Info, UserCircle, FileText, Calendar, Search } from 'lucide-react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Loader2, Building2, Clock, AlertCircle, Unlock, Lock, Info, UserCircle, FileText, Calendar, Search, ShieldCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import { TAHAP_LABELS, JENIS_PENGAJUAN_SHORT } from '@/lib/wpa-constants'
+
+// Lazy load DroppingPusatView
+const DroppingPusatView = dynamic(
+  () => import('./DroppingPusatView').then(m => ({ default: m.DroppingPusatView })),
+  { ssr: false, loading: () => <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-slate-400" /></div> }
+)
 
 interface Pipeline {
   id: string
@@ -59,6 +67,30 @@ function daysUntilExpired(dateStr: string | null): number | null {
 }
 
 export function TugasCabangView({ role }: Props) {
+  // Wrapper dengan tabs: Approval | Semua Tugas | Dropping Pusat
+  return (
+    <Tabs defaultValue="all" className="space-y-4">
+      <TabsList>
+        <TabsTrigger value="approval" className="flex items-center gap-1">
+          <ShieldCheck className="w-3 h-3" /> Approval
+        </TabsTrigger>
+        <TabsTrigger value="all">Semua Tugas</TabsTrigger>
+        <TabsTrigger value="dropping">Dropping Pusat</TabsTrigger>
+      </TabsList>
+      <TabsContent value="approval">
+        <TugasCabangIndividual role={role} filterTahap="approval_kabid" title="Antrean Approval" />
+      </TabsContent>
+      <TabsContent value="all">
+        <TugasCabangIndividual role={role} title="Tugas Cabang" />
+      </TabsContent>
+      <TabsContent value="dropping">
+        <DroppingPusatView role={role as any} />
+      </TabsContent>
+    </Tabs>
+  )
+}
+
+function TugasCabangIndividual({ role, filterTahap, title: _title }: Props & { filterTahap?: string; title?: string }) {
   const router = useRouter()
   const [list, setList] = useState<Pipeline[]>([])
   const [loading, setLoading] = useState(true)
@@ -70,7 +102,10 @@ export function TugasCabangView({ role }: Props) {
   useEffect(() => {
     async function fetchList() {
       try {
-        const res = await fetch('/api/pipeline/list?cabang_only=true')
+        const url = filterTahap
+          ? `/api/pipeline/list?cabang_only=true&tahap=${filterTahap}`
+          : '/api/pipeline/list?cabang_only=true'
+        const res = await fetch(url)
         const data = await res.json()
         setList(data.data || [])
       } catch (e) { console.error(e) }
