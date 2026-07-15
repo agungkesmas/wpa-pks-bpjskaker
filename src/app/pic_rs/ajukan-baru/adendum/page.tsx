@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -14,10 +14,14 @@ import { FileUploader } from '@/components/wpa/FileUploader'
 
 type AdendumSub = 'tarif' | 'layanan_baru' | 'perubahan_data'
 
-export default function AdendumPage() {
+function AdendumPageInner() {
   const router = useRouter()
+  const params = useSearchParams()
+  const initialSub = params.get('sub') as AdendumSub | null
   const [loading, setLoading] = useState(false)
-  const [sub, setSub] = useState<AdendumSub>('tarif')
+  const [sub, setSub] = useState<AdendumSub>(
+    initialSub === 'tarif' || initialSub === 'layanan_baru' || initialSub === 'perubahan_data' ? initialSub : 'tarif'
+  )
   const [pipelineId, setPipelineId] = useState<string | null>(null)
   const [catatan, setCatatan] = useState('')
   const [allFilesUploaded, setAllFilesUploaded] = useState(false)
@@ -193,5 +197,14 @@ export default function AdendumPage() {
         </div>
       )}
     </div>
+  )
+}
+
+// Wrap with Suspense for useSearchParams (Next.js 16 requirement)
+export default function AdendumPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-slate-400" /></div>}>
+      <AdendumPageInner />
+    </Suspense>
   )
 }

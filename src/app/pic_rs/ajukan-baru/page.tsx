@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -25,7 +25,6 @@ interface MasalTemplate {
 
 export default function AjukanPage() {
   const router = useRouter()
-  const params = useSearchParams()
 
   const [masalTemplates, setMasalTemplates] = useState<MasalTemplate[]>([])
   const [loadingTemplates, setLoadingTemplates] = useState(true)

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getSession, logAudit } from '@/lib/auth'
 import { z } from 'zod'
-import { TAHAP_FLOW, SKIPPABLE_TAHAPS } from '@/lib/wpa-constants'
+import { TAHAP_FLOW, SKIPPABLE_TAHAPS, TAHAP_LABELS } from '@/lib/wpa-constants'
 
 const schema = z.object({
   pipeline_id: z.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
@@ -324,6 +324,21 @@ export async function POST(req: NextRequest) {
       
     } else if (data.action === 'cancel') {
       // Cancel pipeline
+      // Rule: PIC RS hanya bisa cancel di tahap awal (diajukan/ditinjau)
+      //       CM/Kabid/SuperAdmin bisa cancel kapan saja (intervensi)
+      if (me.role === 'pic_rs') {
+        const allowedTahaps = ['diajukan', 'ditinjau']
+        if (!allowedTahaps.includes(pipeline.current_tahap)) {
+          return NextResponse.json({
+            error: `Pengajuan sudah masuk tahap "${TAHAP_LABELS[pipeline.current_tahap] || pipeline.current_tahap}". Pembatalan tidak bisa dilakukan oleh PIC RS. Hubungi CM untuk proses lebih lanjut.`
+          }, { status: 400 })
+        }
+      }
+      // Wajib catatan untuk cancel
+      if (!data.catatan || data.catatan.trim().length < 5) {
+        return NextResponse.json({ error: 'Alasan pembatalan wajib diisi (minimal 5 karakter)' }, { status: 400 })
+      }
+
       const { error: updErr } = await supabaseAdmin
         .from('wpa_pipeline')
         .update({
@@ -334,16 +349,32 @@ export async function POST(req: NextRequest) {
         })
         .eq('id', pipeline.id)
       if (updErr) throw updErr
-      
+
       await supabaseAdmin.from('wpa_pipeline_log').insert({
         pipeline_id: pipeline.id,
         tahap: pipeline.current_tahap,
         action: 'cancel',
         performed_by: me.id,
-        catatan: data.catatan || 'Dibatalkan',
+        catatan: data.catatan,
       })
-      
-      return NextResponse.json({ success: true, message: 'Pengajuan dibatalkan.' })
+
+      // Notify initiator if canceler is not the initiator
+      if (pipeline.initiated_by && pipeline.initiated_by !== me.id) {
+        const cancelerRole = me.role === 'super_admin' ? 'Super Admin' :
+                            me.role === 'kepala_bidang' ? 'Kepala Bidang' :
+                            me.role === 'case_manager' ? 'Case Manager' : 'Sistem'
+        await supabaseAdmin.from('wpa_notifications').insert({
+          user_id: pipeline.initiated_by,
+          kantor_cabang_id: pipeline.kantor_cabang_id,
+          type: 'pipeline_cancelled',
+          title: 'Pengajuan Dibatalkan',
+          body: `Pengajuan Anda dibatalkan oleh ${cancelerRole}. Alasan: ${data.catatan}`,
+          related_entity: 'pipeline',
+          related_id: pipeline.id,
+        })
+      }
+
+      return NextResponse.json({ success: true, message: 'Pengajuan berhasil dibatalkan.' })
     }
     
     return NextResponse.json({ error: 'Action tidak dikenal' }, { status: 400 })
