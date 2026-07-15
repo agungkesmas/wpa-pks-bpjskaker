@@ -8,10 +8,11 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
   Loader2, ArrowLeft, Clock, CheckCircle2, Circle, AlertCircle,
-  ArrowRight, ArrowLeft as ArrowLeftIcon, XCircle, Hand, User, Calendar, FileText
+  ArrowRight, ArrowLeft as ArrowLeftIcon, XCircle, Hand, User, Calendar, FileText, Printer, Download
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { TAHAP_LABELS } from '@/lib/wpa-constants'
@@ -28,6 +29,16 @@ const DraftingPKSView = dynamic(
       </div>
     ),
   }
+)
+
+// Lazy load CM Review + Takeover components
+const CMReviewDraft = dynamic(
+  () => import('@/components/wpa/CMReviewDraft').then(m => ({ default: m.CMReviewDraft })),
+  { ssr: false, loading: () => <div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-slate-400" /></div> }
+)
+const CMTakeoverModal = dynamic(
+  () => import('@/components/wpa/CMTakeoverModal').then(m => ({ default: m.CMTakeoverModal })),
+  { ssr: false, loading: () => <div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-slate-400" /></div> }
 )
 
 interface PipelineData {
@@ -218,9 +229,65 @@ export function PipelineDetailView({ role, currentUserId }: Props) {
         </div>
       )}
       
-      {/* Drafting PKS — tampilkan saat tahap drafting_pks atau drafting_adendum */}
-      {pipeline && (pipeline.current_tahap === 'drafting_pks' || pipeline.current_tahap === 'drafting_adendum') && (isHandler || role === 'super_admin') && (
-        <DraftingPKSView pipelineId={pipeline.id} onGenerated={() => {}} />
+      {/* Drafting PKS — conditional rendering based on role + draft status */}
+      {pipeline && (pipeline.current_tahap === 'drafting_pks' || pipeline.current_tahap === 'drafting_adendum') && (
+        isHandler || role === 'super_admin' ? (
+          <>
+            {/* PIC RS: DraftingPKSView (isi placeholder + submit draft) */}
+            {(role === 'pic_rs' || role === 'super_admin') && (
+              <DraftingPKSView pipelineId={pipeline.id} onGenerated={() => fetchDetail()} />
+            )}
+
+            {/* CM: Review Draft atau Takeover */}
+            {(role === 'case_manager' || role === 'kepala_bidang' || role === 'super_admin') && (
+              (pipeline as any).draft_iteration >= 4 ? (
+                // 4x koreksi sudah tercapai → CM takeover
+                <CMTakeoverModal pipelineId={pipeline.id} onTakeoverComplete={() => fetchDetail()} />
+              ) : (
+                // Normal review flow
+                <CMReviewDraft pipelineId={pipeline.id} onActionComplete={() => fetchDetail()} />
+              )
+            )}
+          </>
+        ) : null
+      )}
+
+      {/* Print Final Draft — saat sudah approved (tahap tanda_tangan atau setelahnya) */}
+      {pipeline && ['tanda_tangan', 'completed'].includes(pipeline.current_tahap) && (pipeline as any).current_draft_version_id && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Printer className="w-4 h-4 text-green-700" /> Draft PKS Final — Siap Print
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Alert className="bg-green-50 border-green-200 mb-3">
+              <CheckCircle2 className="w-4 h-4 text-green-600" />
+              <div className="text-sm text-green-900">
+                Draft PKS sudah final. Silakan print untuk tanda tangan basah kedua belah pihak.
+              </div>
+            </Alert>
+            <Button
+              className="bg-green-700 hover:bg-green-800"
+              onClick={() => {
+                // Fetch final version HTML + print
+                fetch(`/api/drafting/version/${(pipeline as any).current_draft_version_id}`)
+                  .then(r => r.json())
+                  .then(data => {
+                    if (data.data?.content_html) {
+                      const printWindow = window.open('', '_blank', 'width=800,height=900')
+                      if (!printWindow) return
+                      printWindow.document.write(`<!DOCTYPE html><html><head><title>PKS Final</title><style>@page{size:A4;margin:20mm}body{font-family:'Times New Roman',serif;font-size:12pt;line-height:1.6}table{border-collapse:collapse;width:100%}td,th{border:1px solid #000;padding:4px 8px}</style></head><body>${data.data.content_html}</body></html>`)
+                      printWindow.document.close()
+                      setTimeout(() => { printWindow.focus(); printWindow.print() }, 500)
+                    }
+                  })
+              }}
+            >
+              <Printer className="w-4 h-4 mr-1" /> Print PKS Final
+            </Button>
+          </CardContent>
+        </Card>
       )}
 
       {/* Dokumen yang diupload */}

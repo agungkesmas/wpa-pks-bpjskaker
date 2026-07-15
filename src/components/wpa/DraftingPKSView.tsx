@@ -7,8 +7,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { Textarea } from '@/components/ui/textarea'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Loader2, Save, FileText, CheckCircle2, AlertCircle, Lock, Sparkles, Printer } from 'lucide-react'
+import { Loader2, Save, FileText, CheckCircle2, AlertCircle, Lock, Sparkles, Printer, Send } from 'lucide-react'
 import { toast } from 'sonner'
 
 // Lazy load DocumentEditor (TipTap ~500KB) — hanya saat user edit dokumen
@@ -279,15 +281,131 @@ export function DraftingPKSView({ pipelineId, onGenerated }: Props) {
       
       {/* Preview modal */}
       {previewHtml && (
-        <PreviewModal html={previewHtml} pksId={pksId} onClose={() => setPreviewHtml(null)} />
+        <PreviewModal html={previewHtml} pksId={pksId} pipelineId={pipelineId} onClose={() => setPreviewHtml(null)} onSubmitted={() => { onGenerated?.(); fetchDraftingData(); }} />
       )}
     </div>
   )
 }
 
-function PreviewModal({ html, pksId, onClose }: { html: string; pksId: string | null; onClose: () => void }) {
+function PreviewModal({ html, pksId, pipelineId, onClose, onSubmitted }: { html: string; pksId: string | null; pipelineId: string; onClose: () => void; onSubmitted?: () => void }) {
   const [showEditor, setShowEditor] = useState(false)
-  
+  const [editedHtml, setEditedHtml] = useState(html)
+  const [originalCharCounts, setOriginalCharCounts] = useState<Record<string, any>>({})
+  const [editReason, setEditReason] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [versions, setVersions] = useState<any[]>([])
+  const [pipelineInfo, setPipelineInfo] = useState<any>(null)
+
+  useEffect(() => {
+    // Calculate original char counts per paragraph
+    const counts = calculateCharCounts(html)
+    setOriginalCharCounts(counts)
+    // Fetch existing versions + pipeline info
+    fetchVersions()
+    fetchPipelineInfo()
+  }, [html])
+
+  async function fetchVersions() {
+    try {
+      const res = await fetch(`/api/drafting/versions?pipeline_id=${pipelineId}`)
+      const data = await res.json()
+      if (res.ok) setVersions(data.data || [])
+    } catch (e) { console.error(e) }
+  }
+
+  async function fetchPipelineInfo() {
+    try {
+      const res = await fetch(`/api/pipeline/detail/${pipelineId}`)
+      const data = await res.json()
+      if (res.ok) setPipelineInfo(data.data)
+    } catch (e) { console.error(e) }
+  }
+
+  function calculateCharCounts(htmlStr: string): Record<string, any> {
+    // Parse HTML dan hitung char count per paragraph
+    const parser = new DOMParser()
+    const doc = parser.parseFromString(htmlStr, 'text/html')
+    const paragraphs = doc.querySelectorAll('p, div, li, h1, h2, h3, h4, h5, h6')
+    const counts: Record<string, any> = {}
+    paragraphs.forEach((p, i) => {
+      const text = p.textContent || ''
+      const charCount = text.replace(/\s+/g, ' ').trim().length
+      if (charCount > 0) {
+        counts[`paragraph_${i + 1}`] = {
+          original: charCount,
+          current: charCount,
+          delta: 0,
+          within_tolerance: true,
+          preview: text.substring(0, 80) + (text.length > 80 ? '...' : ''),
+        }
+      }
+    })
+    return counts
+  }
+
+  function getCurrentCharCounts(): Record<string, any> {
+    const counts: Record<string, any> = {}
+    const parser = new DOMParser()
+    const doc = parser.parseFromString(editedHtml, 'text/html')
+    const paragraphs = doc.querySelectorAll('p, div, li, h1, h2, h3, h4, h5, h6')
+    paragraphs.forEach((p, i) => {
+      const key = `paragraph_${i + 1}`
+      const original = originalCharCounts[key]?.original || 0
+      const text = p.textContent || ''
+      const current = text.replace(/\s+/g, ' ').trim().length
+      if (original > 0 || current > 0) {
+        const delta = current - original
+        const tolerance = original * 0.1  // ±10%
+        const withinTolerance = original === 0 ? true : Math.abs(delta) <= tolerance
+        counts[key] = {
+          original,
+          current,
+          delta,
+          within_tolerance: withinTolerance,
+          reason: withinTolerance ? null : (originalCharCounts[key]?.reason || ''),
+          preview: text.substring(0, 80) + (text.length > 80 ? '...' : ''),
+        }
+      }
+    })
+    return counts
+  }
+
+  const currentCounts = getCurrentCharCounts()
+  const outsideTolerance = Object.entries(currentCounts).filter(([_, v]: [string, any]) => !v.within_tolerance)
+  const totalChanges = Object.entries(currentCounts).filter(([_, v]: [string, any]) => v.delta !== 0).length
+  const currentIteration = pipelineInfo?.draft_iteration || 0
+  const remainingIterations = 4 - currentIteration
+  const lastReturnedVersion = versions.filter((v: any) => v.status === 'returned').pop()
+
+  async function handleSubmitDraft() {
+    if (outsideTolerance.length > 0 && editReason.trim().length < 5) {
+      toast.error(`Ada ${outsideTolerance.length} paragraf di luar tolerance. Alasan edit wajib diisi (minimal 5 karakter).`)
+      return
+    }
+    setSubmitting(true)
+    try {
+      const res = await fetch('/api/drafting/save-version', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pipeline_id: pipelineId,
+          content_html: editedHtml,
+          char_counts: currentCounts,
+          edit_reason: editReason || null,
+        })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      toast.success(data.message)
+      onSubmitted?.()
+      onClose()
+    } catch (e: any) {
+      toast.error(e.message)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   function handlePrint() {
     const printWindow = window.open('', '_blank', 'width=800,height=900')
     if (!printWindow) return
@@ -300,48 +418,150 @@ function PreviewModal({ html, pksId, onClose }: { html: string; pksId: string | 
         table { border-collapse: collapse; width: 100%; }
         td, th { border: 1px solid #000; padding: 4px 8px; }
       </style>
-      </head><body>${html}</body></html>
+      </head><body>${editedHtml}</body></html>
     `)
     printWindow.document.close()
     setTimeout(() => { printWindow.focus(); printWindow.print() }, 500)
   }
-  
+
   if (showEditor && pksId) {
     return (
       <Dialog open={true} onOpenChange={onClose}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Editor PKS (Free Edit)</DialogTitle></DialogHeader>
-          <DocumentEditor dokumenId={pksId} onClose={onClose} />
+          <DialogHeader><DialogTitle>Editor PKS — Rapihkan Format</DialogTitle></DialogHeader>
+          <DocumentEditor dokumenId={pksId} onClose={() => setShowEditor(false)} />
+          <div className="flex gap-2 mt-2">
+            <Button variant="outline" onClick={() => setShowEditor(false)}>Kembali ke Preview</Button>
+          </div>
         </DialogContent>
       </Dialog>
     )
   }
-  
+
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <CheckCircle2 className="w-5 h-5 text-green-600" /> Preview PKS
+            <CheckCircle2 className="w-5 h-5 text-green-600" /> Preview & Submit Draft PKS
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
-          <div className="flex gap-2">
-            <Button onClick={handlePrint} className="bg-blue-700 hover:bg-blue-800">
-              <Printer className="w-4 h-4 mr-1" /> Print / PDF
+          {/* Iteration info */}
+          <div className="flex items-center justify-between p-3 bg-blue-50 rounded border border-blue-200">
+            <div className="text-sm">
+              <strong>Iterasi: {currentIteration}/4</strong>
+              {remainingIterations > 0 ? ` (sisa ${remainingIterations}x koreksi sebelum CM takeover)` : ' — CM harus takeover'}
+            </div>
+            {lastReturnedVersion && (
+              <Badge className="bg-yellow-100 text-yellow-800">Dikembalikan CM</Badge>
+            )}
+          </div>
+
+          {/* CM feedback (if returned) */}
+          {lastReturnedVersion?.cm_feedback && (
+            <Alert className="bg-yellow-50 border-yellow-300">
+              <AlertCircle className="w-4 h-4 text-yellow-700" />
+              <AlertDescription className="text-yellow-900 text-sm">
+                <strong>Catatan CM (v{lastReturnedVersion.version}):</strong> {lastReturnedVersion.cm_feedback}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Char count summary */}
+          <div className="flex gap-2 flex-wrap">
+            <Badge className="bg-slate-100 text-slate-700">{Object.keys(currentCounts).length} paragraf</Badge>
+            <Badge className={totalChanges > 0 ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-600'}>
+              {totalChanges} perubahan
+            </Badge>
+            {outsideTolerance.length > 0 ? (
+              <Badge className="bg-red-100 text-red-800">⚠️ {outsideTolerance.length} di luar tolerance</Badge>
+            ) : (
+              <Badge className="bg-green-100 text-green-800">✅ Semua within tolerance</Badge>
+            )}
+          </div>
+
+          {/* Outside tolerance details */}
+          {outsideTolerance.length > 0 && (
+            <div className="border border-red-200 rounded p-3 bg-red-50/50">
+              <div className="text-sm font-semibold text-red-800 mb-2">
+                ⚠️ Paragraf di luar tolerance (±10%) — wajib isi alasan:
+              </div>
+              <div className="space-y-1 max-h-32 overflow-y-auto">
+                {outsideTolerance.map(([key, v]: [string, any]) => (
+                  <div key={key} className="text-xs text-red-700">
+                    <strong>{key}:</strong> {v.original} → {v.current} chars (delta: {v.delta > 0 ? '+' : ''}{v.delta})
+                    <br /><span className="text-slate-500 italic">{v.preview}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-2">
+                <Label className="text-xs">Alasan perubahan (wajib) *</Label>
+                <Textarea
+                  value={editReason}
+                  onChange={e => setEditReason(e.target.value)}
+                  rows={2}
+                  placeholder="Jelaskan alasan perubahan di luar tolerance..."
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="flex gap-2 flex-wrap">
+            <Button onClick={handlePrint} variant="outline">
+              <Printer className="w-4 h-4 mr-1" /> Print Preview
             </Button>
             {pksId && (
               <Button variant="outline" onClick={() => setShowEditor(true)}>
-                <FileText className="w-4 h-4 mr-1" /> Edit di WYSIWYG
+                <FileText className="w-4 h-4 mr-1" /> Rapihkan Format (WYSIWYG)
               </Button>
             )}
-            <Button variant="ghost" onClick={onClose}>Tutup</Button>
+            <Button
+              className="bg-green-700 hover:bg-green-800 flex-1"
+              onClick={handleSubmitDraft}
+              disabled={submitting || remainingIterations <= 0}
+            >
+              {submitting ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Send className="w-4 h-4 mr-1" />}
+              Submit Draft v{currentIteration + 1} ke CM
+            </Button>
           </div>
-          <div 
+
+          {/* Preview HTML */}
+          <div
             className="border border-slate-200 rounded-lg p-6 overflow-y-auto bg-white"
-            style={{ maxHeight: '60vh', fontFamily: 'Times New Roman, serif', fontSize: '12pt', lineHeight: 1.6 }}
-            dangerouslySetInnerHTML={{ __html: html }}
+            style={{ maxHeight: '50vh', fontFamily: 'Times New Roman, serif', fontSize: '12pt', lineHeight: 1.6 }}
+            contentEditable
+            suppressContentEditableWarning
+            onInput={(e) => setEditedHtml(e.currentTarget.innerHTML)}
+            dangerouslySetInnerHTML={{ __html: editedHtml }}
           />
+          <p className="text-xs text-slate-500">Klik area preview untuk edit langsung (rapihkan format). Perubahan akan di-track.</p>
+
+          {/* Version history */}
+          {versions.length > 0 && (
+            <div className="border border-slate-200 rounded p-3">
+              <div className="text-sm font-semibold mb-2">History Versions</div>
+              <div className="space-y-1 max-h-32 overflow-y-auto">
+                {versions.map((v: any) => (
+                  <div key={v.id} className="text-xs flex items-center gap-2 border-b border-slate-100 pb-1">
+                    <Badge variant="outline" className="text-[10px]">
+                      {v.version_label === 'final' ? 'FINAL' : `v${v.version}`}
+                    </Badge>
+                    <span className={v.status === 'returned' ? 'text-yellow-700' : v.status === 'approved' || v.status === 'final' ? 'text-green-700' : 'text-slate-600'}>
+                      {v.status}
+                    </span>
+                    <span className="text-slate-400">
+                      {v.total_changes} changes, {v.total_outside_tolerance} outside
+                    </span>
+                    <span className="text-slate-400 ml-auto">
+                      {new Date(v.edited_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
