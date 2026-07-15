@@ -5,13 +5,9 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Loader2, Send, Building2, User, Wallet, FileText, Info, Calendar, Plus, RefreshCw, FileEdit, ArrowRight, Upload } from 'lucide-react'
-import { toast } from 'sonner'
+import { Loader2, FileText, Info, Plus, RefreshCw, FileEdit, ArrowRight, CheckCircle2, Lock } from 'lucide-react'
 
 interface MasalTemplate {
   id: string
@@ -28,9 +24,13 @@ export default function AjukanPage() {
 
   const [masalTemplates, setMasalTemplates] = useState<MasalTemplate[]>([])
   const [loadingTemplates, setLoadingTemplates] = useState(true)
+  const [canSubmitPksBaru, setCanSubmitPksBaru] = useState(false)
+  const [hasActivePksBaru, setHasActivePksBaru] = useState(false)
+  const [loadingStatus, setLoadingStatus] = useState(true)
 
   useEffect(() => {
     fetchMasalTemplates()
+    fetchUserStatus()
   }, [])
 
   async function fetchMasalTemplates() {
@@ -47,12 +47,41 @@ export default function AjukanPage() {
     }
   }
 
+  async function fetchUserStatus() {
+    try {
+      // Cek apakah PIC RS boleh submit PKS Baru (can_submit_pks_baru=true)
+      // dan apakah sudah ada PKS Baru in-progress
+      const res = await fetch('/api/pipeline/list?initiated_by_me=true&include_all_status=true')
+      const data = await res.json()
+      const pipelines = data.data || []
+      // Kalau ada pipeline pks_baru dengan status in_progress → sudah diajukan
+      const hasPksBaru = pipelines.some((p: any) => p.jenis === 'pks_baru' && p.status === 'in_progress')
+      setHasActivePksBaru(hasPksBaru)
+
+      // Cek can_submit_pks_baru dari profile
+      const profileRes = await fetch('/api/auth/me').catch(() => null)
+      if (profileRes && profileRes.ok) {
+        const profileData = await profileRes.json()
+        setCanSubmitPksBaru(profileData.can_submit_pks_baru || false)
+      } else {
+        // Fallback: kalau tidak ada /api/auth/me, pakai logic sederhana
+        // PIC RS yang belum punya faskes_id = boleh submit PKS Baru
+        // (CM sudah create user tanpa faskes_id)
+        setCanSubmitPksBaru(!hasPksBaru)  // simplifikasi
+      }
+    } catch (e) {
+      console.error('Fetch status error:', e)
+    } finally {
+      setLoadingStatus(false)
+    }
+  }
+
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Buat Pengajuan</h1>
         <p className="text-sm text-slate-600">
-          Pilih jenis pengajuan sesuai kebutuhan Anda. Untuk PKS Baru, mohon hubungi Case Manager BPJS.
+          Pilih jenis pengajuan sesuai kebutuhan Anda.
         </p>
       </div>
 
@@ -60,20 +89,65 @@ export default function AjukanPage() {
       <div>
         <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Pengajuan Individu</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {/* PKS Baru — disabled for PIC RS */}
-          <Card className="border-slate-200 bg-slate-50 opacity-70 cursor-not-allowed">
-            <CardContent className="p-4 text-center">
-              <Plus className="w-8 h-8 mx-auto mb-2 text-slate-400" />
-              <div className="font-semibold text-sm text-slate-600">PKS Baru</div>
-              <div className="text-xs text-slate-500 mt-1 mb-2">
-                Faskes baru kerjasama
-              </div>
-              <Badge variant="outline" className="text-[10px]">Hubungi CM</Badge>
-              <p className="text-[10px] text-slate-500 mt-2">
-                CM yang handle end-to-end: input faskes + upload dokumen + buat akun PIC RS
-              </p>
-            </CardContent>
-          </Card>
+          {/* PKS Baru — kondisional */}
+          {loadingStatus ? (
+            <Card className="border-slate-200">
+              <CardContent className="p-4 text-center">
+                <Loader2 className="w-8 h-8 mx-auto mb-2 text-slate-400 animate-spin" />
+                <div className="text-xs text-slate-500">Cek status...</div>
+              </CardContent>
+            </Card>
+          ) : canSubmitPksBaru && !hasActivePksBaru ? (
+            // AKTIF — CM sudah create user, PIC RS belum ajukan
+            <Link href="/pic_rs/ajukan-baru/pks-baru">
+              <Card className="cursor-pointer transition-all border-orange-300 bg-orange-50/30 hover:border-orange-500 hover:bg-orange-50">
+                <CardContent className="p-4 text-center">
+                  <Plus className="w-8 h-8 mx-auto mb-2 text-orange-600" />
+                  <div className="font-semibold text-sm text-slate-900">PKS Baru</div>
+                  <div className="text-xs text-slate-500 mt-1 mb-2">
+                    Faskes baru kerjasama dengan BPJS
+                  </div>
+                  <Badge className="bg-orange-100 text-orange-800 text-[10px]">7 file wajib</Badge>
+                  <p className="text-[10px] text-slate-500 mt-2">
+                    Surat pengantar + company profile + tarif + akta + izin + NPWP + SK PJ
+                  </p>
+                  <div className="mt-2 flex items-center justify-center gap-1 text-orange-700 text-xs font-semibold">
+                    Klik untuk ajukan <ArrowRight className="w-3 h-3" />
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          ) : hasActivePksBaru ? (
+            // SUDAH DIAJUKAN — PKS Baru in-progress
+            <Card className="border-slate-200 bg-slate-50 opacity-70 cursor-not-allowed">
+              <CardContent className="p-4 text-center">
+                <CheckCircle2 className="w-8 h-8 mx-auto mb-2 text-green-500" />
+                <div className="font-semibold text-sm text-slate-600">PKS Baru</div>
+                <div className="text-xs text-slate-500 mt-1 mb-2">
+                  Sedang diproses
+                </div>
+                <Badge className="bg-green-100 text-green-800 text-[10px]">Sudah Diajukan</Badge>
+                <p className="text-[10px] text-slate-500 mt-2">
+                  Lihat status di menu "Pengajuan Saya"
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            // DISABLED — CM belum create user
+            <Card className="border-slate-200 bg-slate-50 opacity-70 cursor-not-allowed">
+              <CardContent className="p-4 text-center">
+                <Lock className="w-8 h-8 mx-auto mb-2 text-slate-400" />
+                <div className="font-semibold text-sm text-slate-600">PKS Baru</div>
+                <div className="text-xs text-slate-500 mt-1 mb-2">
+                  Faskes baru kerjasama
+                </div>
+                <Badge variant="outline" className="text-[10px]">Hubungi CM</Badge>
+                <p className="text-[10px] text-slate-500 mt-2">
+                  Case Manager BPJS harus buatkan akun PIC RS Anda terlebih dahulu
+                </p>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Perpanjangan */}
           <Link href="/pic_rs/ajukan-baru/perpanjangan">
@@ -166,7 +240,7 @@ export default function AjukanPage() {
         <AlertDescription className="text-blue-900">
           <strong>Butuh bantuan?</strong> Hubungi Case Manager di kantor cabang Anda untuk:
           <ul className="text-xs mt-1 ml-4 list-disc">
-            <li>Pengajuan PKS Baru (CM yang handle end-to-end)</li>
+            <li>Pengajuan PKS Baru (CM buatkan akun PIC RS Anda)</li>
             <li>Pertanyaan tentang adendum masal dari kantor pusat</li>
             <li>Kendala upload dokumen atau pengisian form</li>
           </ul>
