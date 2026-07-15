@@ -760,3 +760,51 @@ Stage Summary:
 Sample akun tambahan:
 - pic.newrs@wpa.local / PicNewRS2026!# → pic_rs (temporary, untuk test pengajuan baru)
 - pp.default@wpa.local / PPDefault2026!# → penata_pelayanan (Default cabang)
+
+---
+Task ID: DOMAIN-SWAP-RESPONSIVE
+Agent: main
+Task: Swap domain ke URL baru + verifikasi responsiveness PC↔mobile
+
+Work Log:
+- Swap Vercel domain:
+  • Hapus domain lama: wpa-pks-bpjskaker.vercel.app → HTTP 404 (dimatikan)
+  • Tambah domain baru: manajemen-plkk.vercel.app → HTTP 200 (LIVE)
+  • Project name: manajemen-plkk
+- Verifikasi login 9 user (6 role) di URL baru: semua ✓ sukses
+- Test responsiveness via Agent Browser (3 viewport):
+  • Desktop 1920x1080: sidebar 256px + main 1664px + stats 4 kolom (395px each)
+  • Tablet 768x1024: sidebar hidden + mobile menu button visible + Sheet component
+  • Mobile 375x812: full mobile layout, sidebar via Sheet (swipe-in)
+- Test realtime resize (tanpa reload):
+  • 1920 → 768 → 375 → 1920: semua transisi adaptif instant
+  • Sidebar show/hide berdasarkan lg breakpoint (1024px)
+  • Stats grid adaptif: 2 cols (mobile) → 4 cols (desktop)
+  • Mobile menu button muncul < 1024px
+- Test component responsiveness:
+  • Login page: 2-column split (desktop) → 1-column stack (mobile)
+  • Dashboard stats: grid-cols-2 → grid-cols-4 (md)
+  • Cards (Tugas Cabang): mobile-friendly, no horizontal scroll
+  • Tables (Kantor Detail, Users): overflow-x-auto wrapper (scroll isolated)
+  • Form (Ajukan PKS Baru): 15 inputs accessible di mobile, full width
+  • Tabs (Kantor Detail): 4 tabs visible & functional di mobile
+  • Mobile sidebar (Sheet): slide-in dari kiri, 6 menu visible
+
+Test scenarios via Agent Browser:
+1. ✓ Login page desktop/tablet/mobile
+2. ✓ Super Admin dashboard 3 viewport
+3. ✓ PIC RS form pengajuan di mobile (15 inputs)
+4. ✓ CM Tugas Cabang di mobile (cards, no H-scroll)
+5. ✓ Kantor Detail dengan table di mobile (overflow-x-auto)
+6. ✓ Mobile sidebar buka/tutup (Sheet component)
+7. ✓ Realtime resize desktop → mobile → desktop (tanpa reload)
+
+Stage Summary:
+- ✅ URL final: https://manajemen-plkk.vercel.app (URL lama dimatikan)
+- ✅ 6 role login works di URL baru
+- ✅ Responsive: desktop/tablet/mobile adaptif
+- ✅ Realtime resize tanpa reload (CSS breakpoints)
+- ✅ Mobile sidebar (Sheet) bekerja
+- ✅ Tables dengan overflow-x-auto (tidak break layout)
+- ✅ Forms mobile accessible
+- ✅ Cards-based UI untuk mobile-friendly
