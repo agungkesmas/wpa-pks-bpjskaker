@@ -44,7 +44,8 @@ export async function POST(req: NextRequest) {
     const { data: { publicUrl } } = supabaseAdmin.storage.from('wpa-templates').getPublicUrl(filePath)
     
     // 2. Parse .docx untuk ekstrak teks + placeholder
-    const { value: textContent } = await mammoth.extractRawText({ arrayBuffer: buf })
+    const arrayBuffer = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength)
+    const { value: textContent } = await mammoth.extractRawText({ arrayBuffer })
     
     // 3. Hitung hash keseluruhan
     const templateHash = crypto.createHash('sha256').update(textContent).digest('hex')
