@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
     let query = supabaseAdmin
       .from('wpa_pks_template')
       .select('*')
-      .order('created_at', { ascending: false })
+      .order('uploaded_at', { ascending: false })
     
     if (jenis) query = query.eq('jenis_dokumen', jenis)
     if (active_only) query = query.eq('is_active', true)

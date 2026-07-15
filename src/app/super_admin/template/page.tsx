@@ -9,7 +9,7 @@ export default async function TemplateMandatoriPage() {
   const { data: templates } = await supabaseAdmin
     .from('wpa_pks_template')
     .select('*')
-    .order('created_at', { ascending: false })
+    .order('uploaded_at', { ascending: false })
   
   return (
     <div className="space-y-6">
