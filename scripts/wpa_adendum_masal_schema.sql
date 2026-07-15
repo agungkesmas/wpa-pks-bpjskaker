@@ -1,6 +1,8 @@
 -- ============================================================
 -- MIGRATION: Adendum Masal (Template-driven, PIC RS submit, CM group review)
 -- ============================================================
+-- Versi 2 — Idempotent + Cleanup row lama yang mungkin stuck dengan 'system'
+--
 -- Skema:
 --   1. PIC RS klik kartu coklat "Adendum Masal XXX" (dari template is_masal=true)
 --   2. Isi placeholder (auto-scan dari .docx)
@@ -9,10 +11,19 @@
 --   5. Kalau setuju → auto-generate PDF (siap print TTD basah)
 --
 -- Tahap pipeline adendum_masal (3 tahap):
---   1. diajukan   (PIC RS)
---   2. ditinjau   (CM group review)
---   3. completed  (auto generate PDF)
+--   1. diajukan   (PIC RS)         — submit form placeholder
+--   2. ditinjau   (case_manager)   — group review: ceklis multi, setuju/tolak bareng
+--   3. completed  (case_manager)   — auto-complete (CM trigger via group-action)
+--
+-- ⚠️ NOTE: enum wpa_user_role tidak punya value 'system'.
+--    Yang valid: super_admin, kepala_bidang, case_manager, penata_pelayanan, pic_rs, legal_rs.
+--    Tahap 'completed' di-trigger oleh CM (via group-action approve), jadi handler_role = 'case_manager'.
 -- ============================================================
+
+-- 0. CLEANUP: hapus row lama yang mungkin stuck dengan 'system' atau konflik lain
+--    (PENTING: jalankan dulu sebelum insert baru, supaya tidak konflik)
+delete from wpa_pipeline_tahap_config
+  where jenis_pipeline = 'adendum_masal';
 
 -- 1. Tambah jenis 'adendum_masal' ke wpa_pipeline.jenis check constraint
 do $$ begin
@@ -33,7 +44,7 @@ alter table wpa_pks_template
   add column if not exists judul_kartu text;
 
 comment on column wpa_pks_template.is_masal is 'True jika template ini adalah adendum masal dari kantor pusat. Akan muncul sebagai kartu coklat di menu Buat Pengajuan PIC RS.';
-comment on column wpa_pks_template.judul_kartu is 'Judul yang ditampilkan di kartu PIC RS. Contoh: "Perubahan Pasal 4.c Rawat Inup". Hanya berlaku jika is_masal=true.';
+comment on column wpa_pks_template.judul_kartu is 'Judul yang ditampilkan di kartu PIC RS. Contoh: "Perubahan Pasal 4.c Rawat Inap". Hanya berlaku jika is_masal=true.';
 
 -- 3. Tambah kolom template_id di wpa_pipeline (link pipeline ke template)
 alter table wpa_pipeline
@@ -62,6 +73,8 @@ create table if not exists wpa_pipeline_placeholder_values (
 create index if not exists idx_wpa_placeholder_pipeline on wpa_pipeline_placeholder_values(pipeline_id);
 
 -- 6. Seed tahap config untuk adendum_masal (3 tahap)
+--    ⚠️ handler_role untuk 'completed' = 'case_manager' (BUKAN 'system'!)
+--    Karena enum wpa_user_role tidak punya value 'system'.
 insert into wpa_pipeline_tahap_config (jenis_pipeline, tahap, urutan, is_wajib, default_sla_days, handler_role, description) values
   ('adendum_masal', 'diajukan', 1, true, 1, 'pic_rs', 'PIC RS submit form placeholder adendum masal'),
   ('adendum_masal', 'ditinjau', 2, true, 3, 'case_manager', 'CM group review: ceklis multi, setuju/tolak bareng'),
@@ -75,3 +88,17 @@ on conflict (jenis_pipeline, tahap) do update set
 
 -- 7. Reload PostgREST schema cache
 notify pgrst, 'reload schema';
+
+-- 8. VERIFIKASI: tampilkan hasil seed untuk konfirmasi
+--    (Penting: jalankan ini untuk pastikan tidak ada row dengan 'system' yang tertinggal)
+select
+  jenis_pipeline,
+  tahap,
+  urutan,
+  is_wajib,
+  default_sla_days,
+  handler_role,
+  description
+from wpa_pipeline_tahap_config
+where jenis_pipeline = 'adendum_masal'
+order by urutan;
