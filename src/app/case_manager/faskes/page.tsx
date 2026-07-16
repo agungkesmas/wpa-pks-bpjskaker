@@ -4,18 +4,26 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Building2, MapPin, Phone, Calendar, AlertCircle } from 'lucide-react'
+import { Building2, MapPin, Phone, Calendar, AlertCircle, UserCircle, KeyRound, Printer, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
+import { CMFaskesManager } from '@/components/wpa/CMFaskesManager'
 
 export default async function CMFaskesPage() {
   const me = await getSession()
   if (!me) return null
 
-  // Parallel: faskes list + PKS yang akan berakhir (≤90 hari)
+  // Parallel: faskes list + PKS yang akan berakhir + PIC RS per faskes
   const [faskesRes, pksBerakhirRes] = await Promise.all([
     supabaseAdmin
       .from('wpa_faskes')
-      .select('id, nama, jenis, tipe, status, alamat, kota, penanggung_jawab_nama, penanggung_jawab_phone, telp, email')
+      .select(`
+        id, nama, jenis, tipe, status, alamat, kota, provinsi, telp, email,
+        penanggung_jawab_nama, penanggung_jawab_phone,
+        wpa_user_faskes(
+          is_primary,
+          wpa_users(id, email, full_name, phone, is_active, must_change_password, temp_password, last_login_at)
+        )
+      `)
       .eq('kantor_cabang_id', me.kantor_cabang_id)
       .order('nama'),
     supabaseAdmin
@@ -31,9 +39,8 @@ export default async function CMFaskesPage() {
   const faskesList = faskesRes.data || []
   const pksBerakhir = pksBerakhirRes.data || []
   const aktif = faskesList.filter(f => f.status === 'aktif')
-  const pengajuan = faskesList.filter(f => f.status === 'pengajuan')
 
-  // Cek perpanjangan in-progress per PKS
+  // Cek perpanjangan in-progress
   const pksIds = pksBerakhir.map(p => p.id)
   let perpanjanganInProgress: Record<string, boolean> = {}
   if (pksIds.length > 0) {
@@ -48,19 +55,17 @@ export default async function CMFaskesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Faskes Mitra</h1>
-          <p className="text-sm text-slate-600">Daftar faskes di kantor cabang Anda ({aktif.length} aktif, {pengajuan.length} pengajuan).</p>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900">Faskes Mitra</h1>
+        <p className="text-sm text-slate-600">{aktif.length} faskes aktif · {pksBerakhir.length} PKS berakhir ≤90 hari.</p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card><CardContent className="p-4"><div className="text-2xl font-bold text-green-700">{aktif.length}</div><div className="text-xs text-slate-500">Faskes Aktif</div></CardContent></Card>
-        <Card><CardContent className="p-4"><div className="text-2xl font-bold text-yellow-700">{pengajuan.length}</div><div className="text-xs text-slate-500">Dalam Pengajuan</div></CardContent></Card>
         <Card><CardContent className="p-4"><div className="text-2xl font-bold text-orange-700">{pksBerakhir.length}</div><div className="text-xs text-slate-500">PKS Berakhir ≤90h</div></CardContent></Card>
         <Card><CardContent className="p-4"><div className="text-2xl font-bold text-slate-900">{faskesList.length}</div><div className="text-xs text-slate-500">Total Faskes</div></CardContent></Card>
+        <Card><CardContent className="p-4"><div className="text-2xl font-bold text-blue-700">{faskesList.filter(f => (f.wpa_user_faskes as any[])?.some(uf => uf.wpa_users)).length}</div><div className="text-xs text-slate-500">PIC RS Aktif</div></CardContent></Card>
       </div>
 
       {/* Faskes Akan Perpanjang */}
@@ -103,55 +108,8 @@ export default async function CMFaskesPage() {
         </Card>
       )}
 
-      {/* Faskes Table */}
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nama Faskes</TableHead>
-                <TableHead>Jenis</TableHead>
-                <TableHead>Tipe</TableHead>
-                <TableHead>Kota</TableHead>
-                <TableHead>Penanggung Jawab</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {faskesList.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8">
-                  <AlertCircle className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                  <p className="text-sm text-slate-500">Belum ada faskes terdaftar</p>
-                </TableCell></TableRow>
-              ) : faskesList.map(f => (
-                <TableRow key={f.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Building2 className="w-4 h-4 text-blue-700" />
-                      <div>
-                        <div className="font-medium text-sm">{f.nama}</div>
-                        {f.alamat && <div className="text-xs text-slate-500 flex items-center gap-1"><MapPin className="w-3 h-3" />{f.alamat}</div>}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell><Badge variant="outline">{f.jenis}</Badge></TableCell>
-                  <TableCell>{f.tipe && f.tipe !== '-' ? <Badge variant="outline">Tipe {f.tipe}</Badge> : '-'}</TableCell>
-                  <TableCell className="text-xs">{f.kota || '-'}</TableCell>
-                  <TableCell className="text-xs">
-                    {f.penanggung_jawab_nama || '-'}
-                    {f.penanggung_jawab_phone && <div className="text-slate-400 flex items-center gap-1"><Phone className="w-3 h-3" />{f.penanggung_jawab_phone}</div>}
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={f.status === 'aktif' ? 'bg-green-100 text-green-800' : f.status === 'pengajuan' ? 'bg-yellow-100 text-yellow-800' : 'bg-slate-100 text-slate-600'}>
-                      {f.status}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      {/* Faskes Table dengan PIC RS management */}
+      <CMFaskesManager faskesList={faskesList as any} />
     </div>
   )
 }
