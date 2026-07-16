@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getSession, logAudit } from '@/lib/auth'
 import { z } from 'zod'
+import { cloneDataForPerpanjangan } from '@/lib/pks-placeholders'
 
 const schema = z.object({
   pks_id: z.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
@@ -55,16 +56,39 @@ export async function POST(req: NextRequest) {
     berakhirDate.setFullYear(berakhirDate.getFullYear() + 3)
     const tanggalBerakhirBaru = berakhirDate.toISOString().split('T')[0]
     
-    // Create pipeline
+    // === AUTO-CLONE: copy data_jsonb from PKS lama, reset field yang berubah ===
+    const oldDataJsonb = pksLama.data_jsonb || {}
+    const clonedDataJsonb = cloneDataForPerpanjangan(oldDataJsonb)
+
+    // Create PKS baru (draft) dengan data_jsonb yang sudah di-clone
+    const { data: pksBaru, error: pksBaruErr } = await supabaseAdmin
+      .from('wpa_pks')
+      .insert({
+        kode_pks_pihak_pertama: null,  // kosong — CM isi nomor baru
+        faskes_id: pksLama.faskes_id,
+        kantor_cabang_id: pksLama.kantor_cabang_id,
+        jenis: 'pks_baru',
+        parent_pks_id: pksLama.id,  // link ke PKS lama
+        status: 'draft',
+        tanggal_mulai: tanggalMulaiBaru,
+        tanggal_berakhir: tanggalBerakhirBaru,
+        data_jsonb: clonedDataJsonb,  // 80% data dari PKS lama, 20% di-reset
+        created_by: me.id,
+      })
+      .select('id')
+      .single()
+    if (pksBaruErr) throw pksBaruErr
+
+    // Create pipeline — reference ke PKS baru (bukan lama)
     const { data: pipeline, error: pipelineErr } = await supabaseAdmin
       .from('wpa_pipeline')
       .insert({
         jenis: 'perpanjangan',
-        reference_id: data.pks_id,
+        reference_id: pksBaru.id,
         reference_type: 'pks',
         kantor_cabang_id: pksLama.kantor_cabang_id,
         faskes_id: pksLama.faskes_id,
-        pks_id: data.pks_id,
+        pks_id: pksLama.id,  // pks_id = PKS lama (untuk tracking)
         current_tahap: 'diajukan',
         current_handler_id: null,
         handler_since: null,
@@ -83,7 +107,7 @@ export async function POST(req: NextRequest) {
       tahap: 'diajukan',
       action: 'enter',
       performed_by: me.id,
-      catatan: data.catatan || `Perpanjangan PKS ${pksLama.kode_pks_pihak_pertama} diajukan. Auto-clone data dari PKS lama.`,
+      catatan: data.catatan || `Perpanjangan PKS ${pksLama.kode_pks_pihak_pertama} diajukan. Auto-clone ${Object.keys(clonedDataJsonb).filter(k => clonedDataJsonb[k] !== null).length} placeholder dari PKS lama.`,
     })
     
     // Auto-clone: copy data_jsonb from PKS lama ke pipeline metadata

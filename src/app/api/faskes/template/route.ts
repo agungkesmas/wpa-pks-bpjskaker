@@ -1,118 +1,101 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import * as XLSX from 'xlsx'
+import { PKS_PLACEHOLDERS } from '@/lib/pks-placeholders'
 
 // GET /api/faskes/template
-// Download template Excel untuk batch upload faskes + PKS + PIC RS
+// Download template Excel untuk batch upload faskes
+// Kolom: nama_faskes + jenis_faskes + kota + kode_pks + tanggal_mulai_pks + tanggal_berakhir_pks
+//        + 81 placeholder PKS (NAMA_FASKES, ALAMAT_FASKES, dst)
 export async function GET() {
   try {
     const me = await getSession()
     if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    if (me.role !== 'super_admin' && me.role !== 'case_manager' && me.role !== 'kepala_bidang') {
-      return NextResponse.json({ error: 'Akses ditolak' }, { status: 403 })
+
+    // Build template row: base columns + all 81 placeholder keys
+    const exampleRow: Record<string, string> = {
+      nama_faskes: 'RSUD Juanda Kuningan',
+      jenis_faskes: 'RS',
+      tipe_faskes: 'C',
+      kota: 'Kuningan',
+      provinsi: 'Jawa Barat',
+      kode_pks: 'PKS-001/KC-CIREBON/2024',
+      tanggal_mulai_pks: '2024-08-14',
+      tanggal_berakhir_pks: '2026-08-14',
     }
 
-    // Template dengan 3 contoh row
-    const data = [
-      {
-        nama_faskes: 'RSUD Juanda Kuningan',
-        jenis_faskes: 'RS',
-        tipe_faskes: 'C',
-        alamat: 'Jl. Raya Kuningan No. 12',
-        kota: 'Kuningan',
-        provinsi: 'Jawa Barat',
-        telp: '0232-123456',
-        email_faskes: 'info@rsjuanda.id',
-        npwp: '01.234.567.8-901.000',
-        pj_nama: 'Dr. Andi Wijaya, SpOT',
-        pj_jabatan: 'Direktur',
-        pj_phone: '0812-3456-7890',
-        bank_name: 'BRI',
-        bank_cabang: 'Kuningan',
-        bank_rekening_number: '1234567890',
-        bank_rekening_name: 'RSUD Juanda Kuningan',
-        kode_pks: 'PKS-001/KC-CIREBON/2024',
-        tanggal_mulai_pks: '2024-08-14',
-        tanggal_berakhir_pks: '2026-08-14',
-        pic_rs_nama: 'Dr. Siti Nurhaliza, SKM',
-        pic_rs_email: 'siti@rsjuanda.id',
-        pic_rs_phone: '0813-9876-5432',
-      },
-      {
-        nama_faskes: 'RS Mitra Keluarga Cirebon',
-        jenis_faskes: 'RS',
-        tipe_faskes: 'B',
-        alamat: 'Jl. Siliwangi No. 100',
-        kota: 'Cirebon',
-        provinsi: 'Jawa Barat',
-        telp: '0231-456789',
-        email_faskes: 'info@rsmk-cirebon.id',
-        npwp: '02.345.678.9-012.000',
-        pj_nama: 'Dr. Budi Santoso, SpPD',
-        pj_jabatan: 'Direktur Utama',
-        pj_phone: '0814-5678-9012',
-        bank_name: 'BNI',
-        bank_cabang: 'Cirebon',
-        bank_rekening_number: '0987654321',
-        bank_rekening_name: 'RS Mitra Keluarga',
-        kode_pks: 'PKS-002/KC-CIREBON/2024',
-        tanggal_mulai_pks: '2024-09-01',
-        tanggal_berakhir_pks: '2026-09-01',
-        pic_rs_nama: 'Rina Marlina, SH',
-        pic_rs_email: 'rina@rsmk-cirebon.id',
-        pic_rs_phone: '0815-6789-0123',
-      },
-      {
-        nama_faskes: 'Klinik Pratama Sehat',
-        jenis_faskes: 'Klinik',
-        tipe_faskes: 'Umum',
-        alamat: 'Jl. Kartini No. 5',
-        kota: 'Cirebon',
-        provinsi: 'Jawa Barat',
-        telp: '0231-987654',
-        email_faskes: '',
-        npwp: '',
-        pj_nama: 'dr. Wati, M.Kes',
-        pj_jabatan: 'Kepala Klinik',
-        pj_phone: '0816-7890-1234',
-        bank_name: '',
-        bank_cabang: '',
-        bank_rekening_number: '',
-        bank_rekening_name: '',
-        kode_pks: 'PKS-003/KC-CIREBON/2025',
-        tanggal_mulai_pks: '2025-01-15',
-        tanggal_berakhir_pks: '2027-01-15',
-        pic_rs_nama: '',
-        pic_rs_email: '',
-        pic_rs_phone: '',
-      },
-    ]
+    // Add all 81 placeholder keys as columns
+    for (const p of PKS_PLACEHOLDERS) {
+      // Beri contoh nilai untuk beberapa key utama
+      const examples: Record<string, string> = {
+        NAMA_FASKES: 'RSUD Juanda Kuningan',
+        ALAMAT_FASKES: 'Jl. Raya Kuningan No. 12',
+        JENIS_FASKES: 'Rumah Sakit',
+        BENTUK_FASKES: 'Pemerintah Daerah',
+        NAMA_KANTOR_CABANG: 'BPJS Ketenagakerjaan Cabang Cirebon',
+        ALAMAT_KANTOR_CABANG: 'Jl. Siliwangi No. 1, Cirebon',
+        NAMA_BANK: 'BRI',
+        CABANG_BANK: 'Kuningan',
+        NOMOR_REKENING: '1234567890',
+        NAMA_REKENING: 'RSUD Juanda Kuningan',
+        NOMOR_PKS_PIHAK_PERTAMA: 'PKS-001/KC-CIREBON/2024',
+        TANGGAL_MULAI_PKS: '2024-08-14',
+        TANGGAL_BERAKHIR_PKS: '2026-08-14',
+        KOTA_TANDA_TANGAN: 'Cirebon',
+      }
+      exampleRow[p.key] = examples[p.key] || ''
+    }
+
+    const data = [exampleRow]
 
     const ws = XLSX.utils.json_to_sheet(data)
-    ws['!cols'] = [
-      { wch: 30 }, { wch: 12 }, { wch: 8 }, { wch: 30 }, { wch: 15 }, { wch: 15 },
-      { wch: 15 }, { wch: 25 }, { wch: 20 }, { wch: 25 }, { wch: 15 }, { wch: 15 },
-      { wch: 12 }, { wch: 12 }, { wch: 18 }, { wch: 25 }, { wch: 25 }, { wch: 15 },
-      { wch: 15 }, { wch: 25 }, { wch: 25 }, { wch: 15 },
+
+    // Set column widths — base columns + placeholder columns
+    const cols = [
+      { wch: 30 }, { wch: 12 }, { wch: 8 }, { wch: 15 }, { wch: 15 },
+      { wch: 25 }, { wch: 15 }, { wch: 15 },
     ]
+    for (let i = 0; i < PKS_PLACEHOLDERS.length; i++) {
+      cols.push({ wch: 25 })
+    }
+    ws['!cols'] = cols
 
     const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, 'Data Faskes')
+    XLSX.utils.book_append_sheet(wb, ws, 'Data Faskes + PKS')
 
-    // Instruction sheet
+    // Sheet 2: Daftar Placeholder (reference)
+    const placeholderRef = PKS_PLACEHOLDERS.map(p => ({
+      key: p.key,
+      label: p.label,
+      kategori: p.kategori,
+      auto_clone: p.auto_clone ? 'YA (ikut perpanjangan)' : 'TIDAK (diisi baru)',
+    }))
+    const wsRef = XLSX.utils.json_to_sheet(placeholderRef)
+    wsRef['!cols'] = [{ wch: 35 }, { wch: 40 }, { wch: 25 }, { wch: 30 }]
+    XLSX.utils.book_append_sheet(wb, wsRef, 'Daftar Placeholder (81)')
+
+    // Sheet 3: Petunjuk
     const instructions = [
-      { petunjuk: 'CARA PENGISIAN:' },
-      { petunjuk: '1. Wajib: nama_faskes, jenis_faskes, kota, provinsi, pj_nama, kode_pks, tanggal_mulai_pks, tanggal_berakhir_pks' },
-      { petunjuk: '2. jenis_faskes: RS / Klinik / Puskesmas / PraktikMandiri / Lainnya' },
-      { petunjuk: '3. tipe_faskes: A / B / C / D / Umum (untuk RS)' },
-      { petunjuk: '4. Format tanggal: YYYY-MM-DD (contoh: 2024-08-14)' },
-      { petunjuk: '5. PIC RS opsional — kalau diisi (email), sistem auto-create akun PIC RS + generate password' },
-      { petunjuk: '6. Kalau faskes/PKS sudah ada di DB → auto-update data' },
-      { petunjuk: '7. Kalau PIC RS email sudah ada di DB → skip (tidak duplikat)' },
-      { petunjuk: '8. Upload file ini di menu Faskes Mitra → Import Batch' },
+      { petunjuk: 'CARA PENGISIAN TEMPLATE BATCH UPLOAD FASKES:' },
+      { petunjuk: '' },
+      { petunjuk: 'Sheet "Data Faskes + PKS":' },
+      { petunjuk: '1. Isi 1 row per faskes. Kolom wajib: nama_faskes, jenis_faskes, kota, provinsi, kode_pks, tanggal_mulai_pks, tanggal_berakhir_pks' },
+      { petunjuk: '2. Kolom NAMA_FASKES, ALAMAT_FASKES, dst (81 placeholder) = data dari PKS yang sudah jadi' },
+      { petunjuk: '3. Isi SEMUA placeholder yang Anda punya datanya. Kosongkan yang tidak tahu.' },
+      { petunjuk: '4. jenis_faskes: RS / Klinik / Puskesmas / PraktikMandiri / Lainnya' },
+      { petunjuk: '5. Format tanggal: YYYY-MM-DD (contoh: 2024-08-14)' },
+      { petunjuk: '6. Upload di menu Faskes Mitra → Import Batch' },
+      { petunjuk: '' },
+      { petunjuk: 'Sheet "Daftar Placeholder (81)":' },
+      { petunjuk: 'Daftar lengkap 81 placeholder PKS. Kolom auto_clone menandakan apakah nilai ikut di-clone saat perpanjangan.' },
+      { petunjuk: 'YA = nilai ikut saat perpanjangan (nama, alamat, bank, dll)' },
+      { petunjuk: 'TIDAK = diisi baru saat perpanjangan (nomor PKS, tanggal, tarif)' },
+      { petunjuk: '' },
+      { petunjuk: 'INI ADALAH MIGRASI SEKALI PAKAI. Setelah upload, data tersimpan di database.' },
+      { petunjuk: 'Saat faskes ajukan perpanjangan, 80% data sudah ter-clone otomatis.' },
     ]
     const wsInstr = XLSX.utils.json_to_sheet(instructions)
-    wsInstr['!cols'] = [{ wch: 100 }]
+    wsInstr['!cols'] = [{ wch: 120 }]
     XLSX.utils.book_append_sheet(wb, wsInstr, 'Petunjuk')
 
     const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' })
@@ -120,7 +103,7 @@ export async function GET() {
     return new NextResponse(buf, {
       headers: {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'Content-Disposition': 'attachment; filename="template-faskes-batch.xlsx"',
+        'Content-Disposition': 'attachment; filename="template-faskes-batch-81-placeholder.xlsx"',
       },
     })
   } catch (e: any) {
