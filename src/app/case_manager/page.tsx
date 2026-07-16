@@ -11,7 +11,7 @@ export default async function CMDashboard() {
   const me = await getSession()
   if (!me) return null
 
-  const [allTugas, faskesAktif, slaBreached] = await Promise.all([
+  const [allTugas, faskesAktif, slaBreached, pksBerakhir] = await Promise.all([
     supabaseAdmin.from('wpa_pipeline')
       .select(`
         id, jenis, current_tahap, sla_deadline, sla_breached, faskes_id,
@@ -24,6 +24,13 @@ export default async function CMDashboard() {
       .order('sla_deadline', { ascending: true }),
     supabaseAdmin.from('wpa_faskes').select('*', { count: 'exact', head: true }).eq('kantor_cabang_id', me.kantor_cabang_id).eq('status', 'aktif'),
     supabaseAdmin.from('wpa_pipeline').select('*', { count: 'exact', head: true }).eq('kantor_cabang_id', me.kantor_cabang_id).eq('sla_breached', true).eq('status', 'in_progress'),
+    supabaseAdmin.from('wpa_pks')
+      .select('id, kode_pks_pihak_pertama, tanggal_berakhir, faskes_id, wpa_faskes(nama)')
+      .eq('kantor_cabang_id', me.kantor_cabang_id)
+      .eq('status', 'ditandatangani')
+      .gte('tanggal_berakhir', new Date().toISOString().split('T')[0])
+      .lte('tanggal_berakhir', new Date(Date.now() + 90 * 86400000).toISOString().split('T')[0])
+      .order('tanggal_berakhir', { ascending: true }),
   ])
 
   const myTasks = (allTugas.data || []).filter(t => t.current_handler_id === me.id)
@@ -95,6 +102,38 @@ export default async function CMDashboard() {
                   <Badge className="bg-red-100 text-red-800">Lewat</Badge>
                 </div>
               ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Faskes Akan Perpanjang */}
+      {pksBerakhir.data && pksBerakhir.data.length > 0 && (
+        <Card className="border-orange-300">
+          <CardHeader className="pb-3 flex-row flex items-center justify-between">
+            <CardTitle className="text-base flex items-center gap-2 text-orange-700">
+              <Calendar className="w-4 h-4" /> Faskes Akan Perpanjang (≤90 hari)
+            </CardTitle>
+            <Link href="/case_manager/faskes" className="text-xs text-orange-700 hover:underline">
+              Lihat semua <ArrowRight className="w-3 h-3 inline" />
+            </Link>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {pksBerakhir.data.slice(0, 5).map(p => {
+                const daysLeft = Math.ceil((new Date(p.tanggal_berakhir).getTime() - Date.now()) / 86400000)
+                return (
+                  <div key={p.id} className="flex items-center justify-between p-2 rounded border border-slate-200">
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold truncate">{(p.wpa_faskes as any)?.nama || 'Faskes'}</div>
+                      <div className="text-xs text-slate-500">{p.kode_pks_pihak_pertama} · {new Date(p.tanggal_berakhir).toLocaleDateString('id-ID')}</div>
+                    </div>
+                    <Badge className={daysLeft < 14 ? 'bg-red-100 text-red-800' : daysLeft < 30 ? 'bg-orange-100 text-orange-800' : 'bg-yellow-100 text-yellow-800'}>
+                      {daysLeft}h lagi
+                    </Badge>
+                  </div>
+                )
+              })}
             </div>
           </CardContent>
         </Card>
