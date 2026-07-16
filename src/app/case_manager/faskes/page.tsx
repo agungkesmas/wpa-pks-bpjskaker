@@ -4,9 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Building2, MapPin, Phone, Upload, Download, Calendar, AlertCircle } from 'lucide-react'
+import { Building2, MapPin, Phone, Calendar, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
-import { FaskesBatchImport } from '@/components/wpa/FaskesBatchImport'
 
 export default async function CMFaskesPage() {
   const me = await getSession()
@@ -53,12 +52,6 @@ export default async function CMFaskesPage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Faskes Mitra</h1>
           <p className="text-sm text-slate-600">Daftar faskes di kantor cabang Anda ({aktif.length} aktif, {pengajuan.length} pengajuan).</p>
-        </div>
-        <div className="flex gap-2">
-          <a href="/api/faskes/template" target="_blank">
-            <Button variant="outline"><Download className="w-4 h-4 mr-2" /> Template Excel</Button>
-          </a>
-          <FaskesBatchImport />
         </div>
       </div>
 
@@ -128,8 +121,7 @@ export default async function CMFaskesPage() {
               {faskesList.length === 0 ? (
                 <TableRow><TableCell colSpan={6} className="text-center py-8">
                   <AlertCircle className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                  <p className="text-sm text-slate-500 mb-3">Belum ada faskes terdaftar</p>
-                  <a href="/api/faskes/template" target="_blank"><Button variant="outline" size="sm"><Download className="w-3 h-3 mr-1" /> Download Template</Button></a>
+                  <p className="text-sm text-slate-500">Belum ada faskes terdaftar</p>
                 </TableCell></TableRow>
               ) : faskesList.map(f => (
                 <TableRow key={f.id}>
