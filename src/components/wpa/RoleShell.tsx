@@ -304,7 +304,9 @@ export function RoleShell({ user, kantor_nama, notifications = [], children }: R
 
           {/* Logo + page title */}
           <div className="flex items-center gap-3 flex-1 min-w-0">
-            <img src="/logo.svg" alt="Mitra PLKK" className="w-8 h-8 hidden sm:block flex-shrink-0" />
+            <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-lg bg-blue-700">
+              <ShieldCheck className="w-5 h-5 text-white" />
+            </div>
             <div className="min-w-0">
               <h2 className="text-sm lg:text-base font-semibold text-slate-900 truncate">{currentLabel}</h2>
               <p className="text-[10px] text-slate-500 truncate">
