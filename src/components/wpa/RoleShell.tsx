@@ -8,7 +8,7 @@ import {
   LayoutDashboard, FileSignature, Building2, Users, Settings,
   LogOut, Menu, X, Bell, Calendar, BarChart3,
   FileText, ListChecks, Wallet, ChevronRight, ChevronLeft, ShieldCheck,
-  Inbox, Plus, Briefcase, FolderOpen, FileEdit, ChevronDown
+  Inbox, Plus, Briefcase, FolderOpen, FileEdit, ChevronDown, Compass
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -46,7 +46,6 @@ const ROLE_THEMES: Record<UserRole, { sidebar: string; accent: string; text: str
   legal_rs:         { sidebar: 'bg-purple-900',accent: 'bg-purple-700',text: 'text-purple-100',active: 'bg-purple-700 text-white' },
 }
 
-// Menu with optional sub-items
 interface NavItem {
   href: string
   label: string
@@ -118,18 +117,16 @@ export function RoleShell({ user, kantor_nama, notifications = [], children }: R
   const nav = ROLE_NAV[user.role] || []
   const initials = user.full_name.split(' ').map(w => w.charAt(0)).slice(0,2).join('').toUpperCase()
 
-  // Load collapsed state from localStorage
   useEffect(() => {
     const saved = localStorage.getItem('sidebar-collapsed')
     if (saved === 'true') setCollapsed(true)
   }, [])
 
-  // Save collapsed state
   function toggleCollapse() {
     const next = !collapsed
     setCollapsed(next)
     localStorage.setItem('sidebar-collapsed', String(next))
-    if (next) setExpandedMenus(new Set()) // collapse all sub-menus when sidebar collapses
+    if (next) setExpandedMenus(new Set())
   }
 
   function toggleSubMenu(href: string) {
@@ -141,7 +138,6 @@ export function RoleShell({ user, kantor_nama, notifications = [], children }: R
     })
   }
 
-  // Auto-expand sub-menu if current path is a child
   useEffect(() => {
     nav.forEach(item => {
       if (item.children) {
@@ -163,24 +159,18 @@ export function RoleShell({ user, kantor_nama, notifications = [], children }: R
 
   const sidebar = (
     <div className={cn('flex flex-col h-full transition-all duration-300', sidebarWidth, theme.sidebar)}>
-      {/* Toggle collapse button */}
+      {/* Navigation header — tulisan "Navigation" + toggle collapse */}
       <div className="flex items-center justify-between p-3 border-b border-white/10">
         {!collapsed && (
-          <div className="flex items-center gap-2 text-white min-w-0">
-            <ShieldCheck className="w-5 h-5 flex-shrink-0" />
-            <div className="min-w-0">
-              <div className="font-bold text-sm truncate">Mitra PLKK</div>
-              <div className="text-[9px] opacity-75 truncate">BPJS Ketenagakerjaan</div>
-            </div>
-          </div>
+          <span className="text-[10px] uppercase tracking-wider text-white/60 font-semibold">Navigation</span>
         )}
-        {collapsed && <ShieldCheck className="w-5 h-5 text-white mx-auto" />}
+        {collapsed && <Compass className="w-4 h-4 text-white/60 mx-auto" />}
         <button onClick={toggleCollapse} className="text-white/70 hover:text-white hidden lg:block flex-shrink-0">
           {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
         </button>
       </div>
 
-      {/* User info — di atas (seperti desain referensi) */}
+      {/* User info di atas (seperti desain referensi) */}
       <div className="p-3 border-b border-white/10">
         <div className="flex items-center gap-2">
           <Avatar className="w-8 h-8 flex-shrink-0">
@@ -201,7 +191,7 @@ export function RoleShell({ user, kantor_nama, notifications = [], children }: R
         </div>
       </div>
 
-      {/* Navigation */}
+      {/* Navigation menu */}
       <nav className="flex-1 overflow-y-auto py-2">
         {nav.map(item => {
           const active = pathname === item.href || (item.href !== `/${user.role}` && pathname.startsWith(item.href))
@@ -229,7 +219,6 @@ export function RoleShell({ user, kantor_nama, notifications = [], children }: R
                   <ChevronDown className={cn('w-3 h-3 transition-transform', isExpanded && 'rotate-180')} />
                 )}
               </Link>
-              {/* Sub-menu */}
               {hasChildren && isExpanded && !collapsed && (
                 <div className="ml-6 mb-1">
                   {item.children!.map(child => {
@@ -277,7 +266,7 @@ export function RoleShell({ user, kantor_nama, notifications = [], children }: R
     if (n.href !== `/${user.role}` && pathname.startsWith(n.href)) return true
     if (n.children) return n.children.some(c => pathname === c.href || pathname.startsWith(c.href + '/'))
     return false
-  })?.label || 'Mitra PLKK'
+  })
 
   return (
     <div className="flex h-screen bg-white">
@@ -291,33 +280,44 @@ export function RoleShell({ user, kantor_nama, notifications = [], children }: R
 
       {/* Main content area */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header — putih, logo, info kantor, notif */}
-        <header className="bg-white border-b border-slate-200 px-4 lg:px-6 py-3 flex items-center gap-3 flex-shrink-0">
+        {/* Header — logo Mitra PLKK + judul + info kantor + notif */}
+        <header className="bg-white border-b border-slate-200 px-3 sm:px-4 lg:px-6 py-2.5 flex items-center gap-2 sm:gap-3 flex-shrink-0">
           {/* Mobile menu button */}
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="lg:hidden">
+              <Button variant="ghost" size="icon" className="lg:hidden h-8 w-8">
                 <Menu className="w-5 h-5" />
               </Button>
             </SheetTrigger>
           </Sheet>
 
-          {/* Logo + page title */}
-          <div className="flex items-center gap-3 flex-1 min-w-0">
-            <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-lg bg-blue-700">
+          {/* Logo + Mitra PLKK (di header, bukan sidebar) */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-700">
               <ShieldCheck className="w-5 h-5 text-white" />
             </div>
-            <div className="min-w-0">
-              <h2 className="text-sm lg:text-base font-semibold text-slate-900 truncate">{currentLabel}</h2>
-              <p className="text-[10px] text-slate-500 truncate">
-                {kantor_nama ? `📍 ${kantor_nama}` : user.role === 'pic_rs' || user.role === 'legal_rs' ? '📦 Faskes' : '🌐 Semua Kantor Cabang'}
-              </p>
+            <div className="hidden sm:block">
+              <div className="font-bold text-sm text-slate-900 leading-tight">Mitra PLKK</div>
+              <div className="text-[9px] text-slate-500 leading-tight">BPJS Ketenagakerjaan</div>
             </div>
+          </div>
+
+          {/* Divider */}
+          <div className="hidden sm:block w-px h-8 bg-slate-200 flex-shrink-0" />
+
+          {/* Page title + kantor info */}
+          <div className="flex-1 min-w-0">
+            <h2 className="text-sm font-semibold text-slate-900 truncate">
+              {currentLabel?.label || 'Mitra PLKK'}
+            </h2>
+            <p className="text-[10px] text-slate-500 truncate">
+              {kantor_nama ? `📍 ${kantor_nama}` : user.role === 'pic_rs' || user.role === 'legal_rs' ? '📦 Faskes' : '🌐 Semua Kantor Cabang'}
+            </p>
           </div>
 
           {/* Notifications */}
           <div className="relative flex-shrink-0">
-            <Button variant="ghost" size="icon" className="relative">
+            <Button variant="ghost" size="icon" className="relative h-8 w-8">
               <Bell className="w-5 h-5 text-slate-600" />
               {notifications.length > 0 && (
                 <Badge className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] px-1.5 py-0 min-w-[16px] h-4 flex items-center justify-center">
@@ -327,7 +327,7 @@ export function RoleShell({ user, kantor_nama, notifications = [], children }: R
             </Button>
           </div>
 
-          {/* User badge di header */}
+          {/* User avatar di header */}
           <div className="hidden md:flex items-center gap-2 flex-shrink-0">
             <Avatar className="w-8 h-8">
               <AvatarFallback className={cn(theme.accent, 'text-white text-xs font-semibold')}>
@@ -339,10 +339,17 @@ export function RoleShell({ user, kantor_nama, notifications = [], children }: R
               <div className="text-[10px] text-slate-500">{ROLE_LABELS[user.role]}</div>
             </div>
           </div>
+
+          {/* Mobile: just avatar */}
+          <Avatar className="w-8 h-8 md:hidden flex-shrink-0">
+            <AvatarFallback className={cn(theme.accent, 'text-white text-xs font-semibold')}>
+              {initials}
+            </AvatarFallback>
+          </Avatar>
         </header>
 
         {/* Main content */}
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6 bg-slate-50">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6 bg-slate-50">
           {children}
         </main>
       </div>
