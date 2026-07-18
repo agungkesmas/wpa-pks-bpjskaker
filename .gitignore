@@ -17,3 +17,9 @@ server.log
 /upload/
 *.db
 *.pid
+
+# Mail merge source folder (sudah dipersist ke scripts/ + templates/)
+/pks_mail_merge/
+
+# Backup packages
+/download/mitra-plkk-backup/

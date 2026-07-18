@@ -48,6 +48,7 @@
     "sonner": "^2.0.6",
     "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7",
+    "tsx": "^4.23.1",
     "uuid": "^11.1.0",
     "xlsx": "^0.18.5",
     "zod": "^4.0.2"
