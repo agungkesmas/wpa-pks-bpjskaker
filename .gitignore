@@ -23,3 +23,5 @@ server.log
 
 # Backup packages
 /download/mitra-plkk-backup/
+.vercel
+.env*
