@@ -61,11 +61,12 @@ export async function POST(req: NextRequest) {
         .from('wpa_pipeline')
         .select(`
           id,
-          jenis_pipeline,
+          jenis,
           faskes_id,
           kantor_cabang_id,
           current_tahap,
           initiated_by,
+          pks_id,
           wpa_pks (
             id,
             data_jsonb,
@@ -109,7 +110,7 @@ export async function POST(req: NextRequest) {
       // Local tidak ada, coba download dari Supabase Storage
       templateSource = 'supabase'
 
-      // Kalau ada pipeline_id, ambil template_id dari pks
+      // Kalau ada pks_id, ambil template_id dari pks
       let template_id: string | undefined
       if (pks_id) {
         const { data: pks } = await supabaseAdmin
@@ -117,7 +118,7 @@ export async function POST(req: NextRequest) {
           .select('template_id')
           .eq('id', pks_id)
           .single()
-        template_id = pks?.template_id
+        template_id = pks?.template_id || undefined
       }
 
       if (template_id) {
