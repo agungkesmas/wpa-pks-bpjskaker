@@ -1,31 +1,16 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import dynamic from 'next/dynamic'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { Textarea } from '@/components/ui/textarea'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Loader2, Save, FileText, CheckCircle2, AlertCircle, Lock, Sparkles, Printer, Send } from 'lucide-react'
+import { Loader2, Save, FileText, CheckCircle2, AlertCircle, Lock, Sparkles, Send, Download } from 'lucide-react'
 import { toast } from 'sonner'
-
-// Lazy load DocumentEditor (TipTap ~500KB) — hanya saat user edit dokumen
-const DocumentEditor = dynamic(
-  () => import('@/components/wpa/DocumentEditor').then(m => ({ default: m.DocumentEditor })),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
-        <span className="ml-2 text-sm text-slate-500">Memuat editor...</span>
-      </div>
-    ),
-  }
-)
+import { GenerateDocxButton } from '@/components/wpa/GenerateDocxButton'
 
 interface Placeholder {
   id: string
@@ -155,18 +140,50 @@ export function DraftingPKSView({ pipelineId, onGenerated }: Props) {
       // Save first
       await handleSave()
       
-      // Generate
-      const res = await fetch('/api/drafting/generate', {
+      // Trigger download .docx via Python mail merge (generate-docx endpoint)
+      // Endpoint akan return binary .docx — browser auto-download
+      const res = await fetch('/api/drafting/generate-docx', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pipeline_id: pipelineId }),
+        credentials: 'include',
+        body: JSON.stringify({
+          pipeline_id: pipelineId,
+          return_stats: false,  // binary download, bukan base64
+        }),
       })
-      const d = await res.json()
-      if (!res.ok) throw new Error(d.error)
       
-      setPreviewHtml(d.html)
-      setPksId(d.pks_id)
-      toast.success(`PKS berhasil di-generate! Hash: ${d.hash}. Sisa placeholder kosong: ${d.remaining_placeholders}`)
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Network error' }))
+        throw new Error(err.error || 'Gagal generate .docx')
+      }
+      
+      // Read stats from headers
+      const replaced = res.headers.get('X-Stats-Replaced') || '0'
+      const empty = res.headers.get('X-Stats-Empty-Filled') || '0'
+      const missing = res.headers.get('X-Stats-Missing') || '0'
+      const structValid = res.headers.get('X-Stats-Structure-Valid') === 'true'
+      
+      // Trigger download
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = window.document.createElement('a')
+      a.href = url
+      const disposition = res.headers.get('Content-Disposition') || ''
+      const filenameMatch = disposition.match(/filename="?([^"]+)"?/)
+      a.download = filenameMatch ? filenameMatch[1] : `PKS_${Date.now()}.docx`
+      window.document.body.appendChild(a)
+      a.click()
+      window.document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      
+      // Show stats as info
+      toast.success(
+        `✅ .docx berhasil di-download! Replaced: ${replaced}, Empty: ${empty}, Missing: ${missing}, Structure: ${structValid ? 'OK' : 'CHANGED'}`
+      )
+      
+      // Show preview modal with info
+      setPreviewHtml('downloaded')
+      setPksId(pksId || pipelineId)
       onGenerated?.()
     } catch (e: any) {
       toast.error(e.message)
@@ -274,36 +291,38 @@ export function DraftingPKSView({ pipelineId, onGenerated }: Props) {
           Simpan Draft
         </Button>
         <Button className="bg-blue-700 hover:bg-blue-800 flex-1" onClick={handleGenerate} disabled={generating}>
-          {generating ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1" />}
-          Generate & Preview
+          {generating ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Download className="w-4 h-4 mr-1" />}
+          Generate .docx (Mail Merge)
         </Button>
       </div>
       
-      {/* Preview modal */}
-      {previewHtml && (
-        <PreviewModal html={previewHtml} pksId={pksId} pipelineId={pipelineId} onClose={() => setPreviewHtml(null)} onSubmitted={() => { onGenerated?.(); fetchDraftingData(); }} />
+      {/* Info banner */}
+      <Alert className="bg-blue-50 border-blue-200">
+        <FileText className="w-4 h-4 text-blue-600" />
+        <AlertDescription className="text-blue-900 text-sm">
+          <strong>Mail Merge via Python:</strong> Tombol Generate akan download file .docx hasil mail merge.
+          Format dokumen tidak akan bergeser 1mm pun — struktur XML identik dengan template.
+          Buka file di Microsoft Word untuk review/edit, lalu upload kembali untuk submit ke CM.
+        </AlertDescription>
+      </Alert>
+      
+      {/* Preview modal (simplified — info only) */}
+      {previewHtml && pksId && (
+        <PreviewModal pksId={pksId} pipelineId={pipelineId} onClose={() => setPreviewHtml(null)} onSubmitted={() => { onGenerated?.(); fetchDraftingData(); }} />
       )}
     </div>
   )
 }
 
-function PreviewModal({ html, pksId, pipelineId, onClose, onSubmitted }: { html: string; pksId: string | null; pipelineId: string; onClose: () => void; onSubmitted?: () => void }) {
-  const [showEditor, setShowEditor] = useState(false)
-  const [editedHtml, setEditedHtml] = useState(html)
-  const [originalCharCounts, setOriginalCharCounts] = useState<Record<string, any>>({})
-  const [editReason, setEditReason] = useState('')
+function PreviewModal({ pksId, pipelineId, onClose, onSubmitted }: { pksId: string | null; pipelineId: string; onClose: () => void; onSubmitted?: () => void }) {
   const [submitting, setSubmitting] = useState(false)
   const [versions, setVersions] = useState<any[]>([])
   const [pipelineInfo, setPipelineInfo] = useState<any>(null)
 
   useEffect(() => {
-    // Calculate original char counts per paragraph
-    const counts = calculateCharCounts(html)
-    setOriginalCharCounts(counts)
-    // Fetch existing versions + pipeline info
     fetchVersions()
     fetchPipelineInfo()
-  }, [html])
+  }, [pipelineId])
 
   async function fetchVersions() {
     try {
@@ -321,67 +340,11 @@ function PreviewModal({ html, pksId, pipelineId, onClose, onSubmitted }: { html:
     } catch (e) { console.error(e) }
   }
 
-  function calculateCharCounts(htmlStr: string): Record<string, any> {
-    // Parse HTML dan hitung char count per paragraph
-    const parser = new DOMParser()
-    const doc = parser.parseFromString(htmlStr, 'text/html')
-    const paragraphs = doc.querySelectorAll('p, div, li, h1, h2, h3, h4, h5, h6')
-    const counts: Record<string, any> = {}
-    paragraphs.forEach((p, i) => {
-      const text = p.textContent || ''
-      const charCount = text.replace(/\s+/g, ' ').trim().length
-      if (charCount > 0) {
-        counts[`paragraph_${i + 1}`] = {
-          original: charCount,
-          current: charCount,
-          delta: 0,
-          within_tolerance: true,
-          preview: text.substring(0, 80) + (text.length > 80 ? '...' : ''),
-        }
-      }
-    })
-    return counts
-  }
-
-  function getCurrentCharCounts(): Record<string, any> {
-    const counts: Record<string, any> = {}
-    const parser = new DOMParser()
-    const doc = parser.parseFromString(editedHtml, 'text/html')
-    const paragraphs = doc.querySelectorAll('p, div, li, h1, h2, h3, h4, h5, h6')
-    paragraphs.forEach((p, i) => {
-      const key = `paragraph_${i + 1}`
-      const original = originalCharCounts[key]?.original || 0
-      const text = p.textContent || ''
-      const current = text.replace(/\s+/g, ' ').trim().length
-      if (original > 0 || current > 0) {
-        const delta = current - original
-        const tolerance = original * 0.1  // ±10%
-        const withinTolerance = original === 0 ? true : Math.abs(delta) <= tolerance
-        counts[key] = {
-          original,
-          current,
-          delta,
-          within_tolerance: withinTolerance,
-          reason: withinTolerance ? null : (originalCharCounts[key]?.reason || ''),
-          preview: text.substring(0, 80) + (text.length > 80 ? '...' : ''),
-        }
-      }
-    })
-    return counts
-  }
-
-  const currentCounts = getCurrentCharCounts()
-  const outsideTolerance = Object.entries(currentCounts).filter(([_, v]: [string, any]) => !v.within_tolerance)
-  const totalChanges = Object.entries(currentCounts).filter(([_, v]: [string, any]) => v.delta !== 0).length
   const currentIteration = pipelineInfo?.draft_iteration || 0
   const remainingIterations = 4 - currentIteration
   const lastReturnedVersion = versions.filter((v: any) => v.status === 'returned').pop()
 
   async function handleSubmitDraft() {
-    if (outsideTolerance.length > 0 && editReason.trim().length < 5) {
-      toast.error(`Ada ${outsideTolerance.length} paragraf di luar tolerance. Alasan edit wajib diisi (minimal 5 karakter).`)
-      return
-    }
     setSubmitting(true)
     try {
       const res = await fetch('/api/drafting/save-version', {
@@ -389,14 +352,14 @@ function PreviewModal({ html, pksId, pipelineId, onClose, onSubmitted }: { html:
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           pipeline_id: pipelineId,
-          content_html: editedHtml,
-          char_counts: currentCounts,
-          edit_reason: editReason || null,
+          content_html: null,  // tidak pakai HTML lagi — pakai .docx yang sudah di-download
+          char_counts: {},
+          edit_reason: null,
         })
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
-      toast.success(data.message)
+      toast.success(data.message || 'Draft submitted ke CM')
       onSubmitted?.()
       onClose()
     } catch (e: any) {
@@ -406,44 +369,12 @@ function PreviewModal({ html, pksId, pipelineId, onClose, onSubmitted }: { html:
     }
   }
 
-  function handlePrint() {
-    const printWindow = window.open('', '_blank', 'width=800,height=900')
-    if (!printWindow) return
-    printWindow.document.write(`
-      <!DOCTYPE html><html lang="id"><head><meta charset="UTF-8">
-      <title>Preview PKS — Mitra PLKK</title>
-      <style>
-        @page { size: A4; margin: 20mm; }
-        body { font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.6; }
-        table { border-collapse: collapse; width: 100%; }
-        td, th { border: 1px solid #000; padding: 4px 8px; }
-      </style>
-      </head><body>${editedHtml}</body></html>
-    `)
-    printWindow.document.close()
-    setTimeout(() => { printWindow.focus(); printWindow.print() }, 500)
-  }
-
-  if (showEditor && pksId) {
-    return (
-      <Dialog open={true} onOpenChange={onClose}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Editor PKS — Rapihkan Format</DialogTitle></DialogHeader>
-          <DocumentEditor dokumenId={pksId} onClose={() => setShowEditor(false)} />
-          <div className="flex gap-2 mt-2">
-            <Button variant="outline" onClick={() => setShowEditor(false)}>Kembali ke Preview</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    )
-  }
-
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <CheckCircle2 className="w-5 h-5 text-green-600" /> Preview & Submit Draft PKS
+            <CheckCircle2 className="w-5 h-5 text-green-600" /> .docx Berhasil Di-download
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
@@ -468,55 +399,29 @@ function PreviewModal({ html, pksId, pipelineId, onClose, onSubmitted }: { html:
             </Alert>
           )}
 
-          {/* Char count summary */}
-          <div className="flex gap-2 flex-wrap">
-            <Badge className="bg-slate-100 text-slate-700">{Object.keys(currentCounts).length} paragraf</Badge>
-            <Badge className={totalChanges > 0 ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-600'}>
-              {totalChanges} perubahan
-            </Badge>
-            {outsideTolerance.length > 0 ? (
-              <Badge className="bg-red-100 text-red-800">⚠️ {outsideTolerance.length} di luar tolerance</Badge>
-            ) : (
-              <Badge className="bg-green-100 text-green-800">✅ Semua within tolerance</Badge>
-            )}
-          </div>
-
-          {/* Outside tolerance details */}
-          {outsideTolerance.length > 0 && (
-            <div className="border border-red-200 rounded p-3 bg-red-50/50">
-              <div className="text-sm font-semibold text-red-800 mb-2">
-                ⚠️ Paragraf di luar tolerance (±10%) — wajib isi alasan:
-              </div>
-              <div className="space-y-1 max-h-32 overflow-y-auto">
-                {outsideTolerance.map(([key, v]: [string, any]) => (
-                  <div key={key} className="text-xs text-red-700">
-                    <strong>{key}:</strong> {v.original} → {v.current} chars (delta: {v.delta > 0 ? '+' : ''}{v.delta})
-                    <br /><span className="text-slate-500 italic">{v.preview}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-2">
-                <Label className="text-xs">Alasan perubahan (wajib) *</Label>
-                <Textarea
-                  value={editReason}
-                  onChange={e => setEditReason(e.target.value)}
-                  rows={2}
-                  placeholder="Jelaskan alasan perubahan di luar tolerance..."
-                />
-              </div>
-            </div>
-          )}
+          {/* Info tentang workflow baru */}
+          <Alert className="bg-blue-50 border-blue-200">
+            <FileText className="w-4 h-4 text-blue-600" />
+            <AlertDescription className="text-blue-900 text-sm">
+              <strong>Workflow Mail Merge:</strong>
+              <ol className="list-decimal ml-5 mt-2 space-y-1">
+                <li>File <code>.docx</code> sudah ter-download ke komputer Anda (cek folder Downloads).</li>
+                <li>Buka file di <strong>Microsoft Word</strong> untuk review/edit.</li>
+                <li>Format <strong>tidak bergeser 1mm pun</strong> — struktur XML identik dengan template.</li>
+                <li>Setelah review, klik <strong>Submit Draft ke CM</strong> di bawah.</li>
+                <li>CM akan review .docx yang sama (atau Anda upload balik kalau ada revisi).</li>
+              </ol>
+            </AlertDescription>
+          </Alert>
 
           {/* Actions */}
           <div className="flex gap-2 flex-wrap">
-            <Button onClick={handlePrint} variant="outline">
-              <Printer className="w-4 h-4 mr-1" /> Print Preview
-            </Button>
-            {pksId && (
-              <Button variant="outline" onClick={() => setShowEditor(true)}>
-                <FileText className="w-4 h-4 mr-1" /> Rapihkan Format (WYSIWYG)
-              </Button>
-            )}
+            <GenerateDocxButton
+              pipelineId={pipelineId}
+              label="Download .docx Lagi"
+              variant="outline"
+              showStats={false}
+            />
             <Button
               className="bg-green-700 hover:bg-green-800 flex-1"
               onClick={handleSubmitDraft}
@@ -526,17 +431,6 @@ function PreviewModal({ html, pksId, pipelineId, onClose, onSubmitted }: { html:
               Submit Draft v{currentIteration + 1} ke CM
             </Button>
           </div>
-
-          {/* Preview HTML */}
-          <div
-            className="border border-slate-200 rounded-lg p-6 overflow-y-auto bg-white"
-            style={{ maxHeight: '50vh', fontFamily: 'Times New Roman, serif', fontSize: '12pt', lineHeight: 1.6 }}
-            contentEditable
-            suppressContentEditableWarning
-            onInput={(e) => setEditedHtml(e.currentTarget.innerHTML)}
-            dangerouslySetInnerHTML={{ __html: editedHtml }}
-          />
-          <p className="text-xs text-slate-500">Klik area preview untuk edit langsung (rapihkan format). Perubahan akan di-track.</p>
 
           {/* Version history */}
           {versions.length > 0 && (
@@ -550,9 +444,6 @@ function PreviewModal({ html, pksId, pipelineId, onClose, onSubmitted }: { html:
                     </Badge>
                     <span className={v.status === 'returned' ? 'text-yellow-700' : v.status === 'approved' || v.status === 'final' ? 'text-green-700' : 'text-slate-600'}>
                       {v.status}
-                    </span>
-                    <span className="text-slate-400">
-                      {v.total_changes} changes, {v.total_outside_tolerance} outside
                     </span>
                     <span className="text-slate-400 ml-auto">
                       {new Date(v.edited_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}

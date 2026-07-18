@@ -1,11 +1,31 @@
 // ============================================================
-// PKS PLACEHOLDERS — 81 placeholder dari template PKS PLKK 2026
+// PKS PLACEHOLDERS — 85 placeholder dari pks_template_bersih.docx
 // ============================================================
-// Sumber: extract dari PKS_PLKK_2026_TEMPLATE_BERSIH.docx
+// Sumber: extract via `python3 scripts/pks_merge.py --list-placeholders`
+//         terhadap file templates/pks_template_bersih.docx
 // Dipakai untuk:
-// 1. Template batch upload faskes (81 kolom = 81 placeholder)
+// 1. Template batch upload faskes (85 kolom = 85 placeholder)
 // 2. Auto-clone saat perpanjangan (copy data_jsonb dari PKS lama)
-// 3. Auto-fill saat drafting PKS (replace {{KEY}} dengan nilai dari data_jsonb)
+// 3. Auto-fill saat drafting PKS (Python pks_merge.py replace {{KEY}})
+// ============================================================
+// PERUBAHAN dari versi 81-placeholder (lama):
+// - HAPUS: ACUAN_TARIF_RS_PEMERINTAH, NAMA_RS_PEMERINTAH_DAERAH, NAMA_RS_PEMERINTAH_PROVINSI
+//   (diganti dengan NAMA_RS_PEMERINTAH_ACUAN — tunggal, generic)
+// - TAMBAH 13 placeholder baru yang ada di template bersih:
+//   * JABATAN_PENANDATANGAN_PIHAK_PERTAMA
+//   * JABATAN_SAKSI_PIHAK_KEDUA
+//   * JABATAN_SAKSI_PIHAK_PERTAMA
+//   * NAMA_PIC_ADMIN_FASKES
+//   * NAMA_PIC_BPJS
+//   * NAMA_PIC_KLINIS_FASKES
+//   * NAMA_RS_PEMERINTAH_ACUAN
+//   * NOMOR_BA_REKONSILIASI
+//   * TAHUN_PAKTA
+//   * TAHUN_TANDA_TANGAN
+//   * TELP_FAX_FASKES
+//   * WEB_FASKES
+//   * BULAN_TANDA_TANGAN
+// Total sekarang: 85 placeholder
 // ============================================================
 
 export interface PKSPlaceholder {
@@ -21,9 +41,11 @@ export const PKS_PLACEHOLDERS: PKSPlaceholder[] = [
   { key: 'ALAMAT_FASKES', label: 'Alamat Faskes', kategori: 'Identitas Faskes', auto_clone: true },
   { key: 'JENIS_FASKES', label: 'Jenis Faskes', kategori: 'Identitas Faskes', auto_clone: true },
   { key: 'BENTUK_FASKES', label: 'Bentuk Faskes (Pemda/Swasta dll)', kategori: 'Identitas Faskes', auto_clone: true },
+  { key: 'WEB_FASKES', label: 'Website Faskes', kategori: 'Identitas Faskes', auto_clone: true },
+  { key: 'TELP_FAX_FASKES', label: 'Telp/Fax Faskes', kategori: 'Identitas Faskes', auto_clone: true },
+  { key: 'JENIS_AKTA_PENDIRIAN', label: 'Jenis Akta Pendirian', kategori: 'Identitas Faskes', auto_clone: true },
   { key: 'NOMOR_AKTA_PENDIRIAN', label: 'Nomor Akta Pendirian', kategori: 'Identitas Faskes', auto_clone: true },
   { key: 'TANGGAL_AKTA_PENDIRIAN', label: 'Tanggal Akta Pendirian', kategori: 'Identitas Faskes', auto_clone: true },
-  { key: 'JENIS_AKTA_PENDIRIAN', label: 'Jenis Akta Pendirian', kategori: 'Identitas Faskes', auto_clone: true },
   { key: 'NAMA_PENANDATANGAN_PIHAK_KEDUA', label: 'Nama Penandatangan Pihak Kedua (Faskes)', kategori: 'Identitas Faskes', auto_clone: true },
   { key: 'JABATAN_PENANDATANGAN_PIHAK_KEDUA', label: 'Jabatan Penandatangan Pihak Kedua', kategori: 'Identitas Faskes', auto_clone: true },
   { key: 'DASAR_KEWENANGAN_PIHAK_KEDUA', label: 'Dasar Kewenangan Pihak Kedua', kategori: 'Identitas Faskes', auto_clone: true },
@@ -32,6 +54,7 @@ export const PKS_PLACEHOLDERS: PKSPlaceholder[] = [
   { key: 'NAMA_KANTOR_CABANG', label: 'Nama Kantor Cabang BPJS', kategori: 'Identitas BPJS', auto_clone: true },
   { key: 'ALAMAT_KANTOR_CABANG', label: 'Alamat Kantor Cabang BPJS', kategori: 'Identitas BPJS', auto_clone: true },
   { key: 'NAMA_KEPALA_KANTOR_CABANG', label: 'Nama Kepala Kantor Cabang', kategori: 'Identitas BPJS', auto_clone: true },
+  { key: 'JABATAN_PENANDATANGAN_PIHAK_PERTAMA', label: 'Jabatan Penandatangan Pihak Pertama (BPJS)', kategori: 'Identitas BPJS', auto_clone: true },
   { key: 'TELP_FAX_BPJS', label: 'Telp/Fax BPJS', kategori: 'Identitas BPJS', auto_clone: true },
   { key: 'NOMOR_KEP_DIREKSI', label: 'Nomor Kep Direksi', kategori: 'Identitas BPJS', auto_clone: true },
   { key: 'JUDUL_KEP_DIREKSI', label: 'Judul Kep Direksi', kategori: 'Identitas BPJS', auto_clone: true },
@@ -43,6 +66,8 @@ export const PKS_PLACEHOLDERS: PKSPlaceholder[] = [
   { key: 'NOMOR_PKS_PIHAK_KEDUA', label: 'Nomor PKS Pihak Kedua (Faskes)', kategori: 'Nomor & Tanggal PKS', auto_clone: false },
   { key: 'HARI_TANDA_TANGAN', label: 'Hari Tanda Tangan', kategori: 'Nomor & Tanggal PKS', auto_clone: false },
   { key: 'TANGGAL_TANDA_TANGAN', label: 'Tanggal Tanda Tangan', kategori: 'Nomor & Tanggal PKS', auto_clone: false },
+  { key: 'BULAN_TANDA_TANGAN', label: 'Bulan Tanda Tangan', kategori: 'Nomor & Tanggal PKS', auto_clone: false },
+  { key: 'TAHUN_TANDA_TANGAN', label: 'Tahun Tanda Tangan', kategori: 'Nomor & Tanggal PKS', auto_clone: false },
   { key: 'KOTA_TANDA_TANGAN', label: 'Kota Tanda Tangan', kategori: 'Nomor & Tanggal PKS', auto_clone: false },
   { key: 'TANGGAL_MULAI_PKS', label: 'Tanggal Mulai PKS', kategori: 'Nomor & Tanggal PKS', auto_clone: false },
   { key: 'TANGGAL_BERAKHIR_PKS', label: 'Tanggal Berakhir PKS', kategori: 'Nomor & Tanggal PKS', auto_clone: false },
@@ -62,9 +87,7 @@ export const PKS_PLACEHOLDERS: PKSPlaceholder[] = [
   // === TARIF (auto_clone: false — diisi saat kajian tarif) ===
   { key: 'JENIS_TARIF_KK_PAK', label: 'Jenis Tarif KK Pakai', kategori: 'Tarif', auto_clone: false },
   { key: 'KELAS_RAWAT_INAP_KK_PAK', label: 'Kelas Rawat Inap KK Pakai', kategori: 'Tarif', auto_clone: false },
-  { key: 'NAMA_RS_PEMERINTAH_DAERAH', label: 'Nama RS Pemerintah Daerah (acuan)', kategori: 'Tarif', auto_clone: false },
-  { key: 'ACUAN_TARIF_RS_PEMERINTAH', label: 'Acuan Tarif RS Pemerintah', kategori: 'Tarif', auto_clone: false },
-  { key: 'NAMA_RS_PEMERINTAH_PROVINSI', label: 'Nama RS Pemerintah Provinsi (acuan)', kategori: 'Tarif', auto_clone: false },
+  { key: 'NAMA_RS_PEMERINTAH_ACUAN', label: 'Nama RS Pemerintah Acuan (acuan tarif)', kategori: 'Tarif', auto_clone: false },
   { key: 'TAHUN_TARIF_NEGOSIASI', label: 'Tahun Tarif Negosiasi', kategori: 'Tarif', auto_clone: false },
 
   // === BA NEGOSIASI (auto_clone: false) ===
@@ -78,9 +101,12 @@ export const PKS_PLACEHOLDERS: PKSPlaceholder[] = [
   { key: 'BULAN_PENAWARAN', label: 'Bulan Penawaran', kategori: 'BA Negosiasi', auto_clone: false },
   { key: 'TAHUN_PENAWARAN', label: 'Tahun Penawaran', kategori: 'BA Negosiasi', auto_clone: false },
   { key: 'NAMA_SAKSI_PIHAK_PERTAMA', label: 'Nama Saksi Pihak Pertama', kategori: 'BA Negosiasi', auto_clone: false },
+  { key: 'JABATAN_SAKSI_PIHAK_PERTAMA', label: 'Jabatan Saksi Pihak Pertama', kategori: 'BA Negosiasi', auto_clone: false },
   { key: 'NAMA_SAKSI_PIHAK_KEDUA', label: 'Nama Saksi Pihak Kedua', kategori: 'BA Negosiasi', auto_clone: false },
+  { key: 'JABATAN_SAKSI_PIHAK_KEDUA', label: 'Jabatan Saksi Pihak Kedua', kategori: 'BA Negosiasi', auto_clone: false },
 
-  // === REKONSILIASI (auto_clone: false) ===
+  // === BA REKONSILIASI (auto_clone: false — diisi saat event rekonsiliasi) ===
+  { key: 'NOMOR_BA_REKONSILIASI', label: 'Nomor BA Rekonsiliasi', kategori: 'Rekonsiliasi', auto_clone: false },
   { key: 'TANGGAL_REKONSILIASI', label: 'Tanggal Rekonsiliasi', kategori: 'Rekonsiliasi', auto_clone: false },
   { key: 'BULAN_REKONSILIASI', label: 'Bulan Rekonsiliasi', kategori: 'Rekonsiliasi', auto_clone: false },
   { key: 'TAHUN_REKONSILIASI', label: 'Tahun Rekonsiliasi', kategori: 'Rekonsiliasi', auto_clone: false },
@@ -102,19 +128,23 @@ export const PKS_PLACEHOLDERS: PKSPlaceholder[] = [
   { key: 'JABATAN_PIC_USER_EPLKK', label: 'Jabatan PIC User EPLKK', kategori: 'PIC & Kontak', auto_clone: true },
   { key: 'NAMA_PIC_NARAHUBUNG', label: 'Nama PIC Narahubung', kategori: 'PIC & Kontak', auto_clone: true },
   { key: 'JABATAN_PIC_NARAHUBUNG', label: 'Jabatan PIC Narahubung', kategori: 'PIC & Kontak', auto_clone: true },
+  { key: 'NAMA_PIC_BPJS', label: 'Nama PIC BPJS', kategori: 'PIC & Kontak', auto_clone: true },
   { key: 'JABATAN_PIC_BPJS', label: 'Jabatan PIC BPJS', kategori: 'PIC & Kontak', auto_clone: true },
   { key: 'HP_PIC_BPJS', label: 'HP PIC BPJS', kategori: 'PIC & Kontak', auto_clone: true },
   { key: 'EMAIL_PIC_BPJS', label: 'Email PIC BPJS', kategori: 'PIC & Kontak', auto_clone: true },
+  { key: 'NAMA_PIC_ADMIN_FASKES', label: 'Nama PIC Admin Faskes', kategori: 'PIC & Kontak', auto_clone: true },
   { key: 'JABATAN_PIC_ADMIN_FASKES', label: 'Jabatan PIC Admin Faskes', kategori: 'PIC & Kontak', auto_clone: true },
   { key: 'HP_PIC_ADMIN_FASKES', label: 'HP PIC Admin Faskes', kategori: 'PIC & Kontak', auto_clone: true },
   { key: 'EMAIL_PIC_ADMIN_FASKES', label: 'Email PIC Admin Faskes', kategori: 'PIC & Kontak', auto_clone: true },
+  { key: 'NAMA_PIC_KLINIS_FASKES', label: 'Nama PIC Klinis Faskes', kategori: 'PIC & Kontak', auto_clone: true },
   { key: 'JABATAN_PIC_KLINIS_FASKES', label: 'Jabatan PIC Klinis Faskes', kategori: 'PIC & Kontak', auto_clone: true },
   { key: 'HP_PIC_KLINIS_FASKES', label: 'HP PIC Klinis Faskes', kategori: 'PIC & Kontak', auto_clone: true },
   { key: 'EMAIL_PIC_KLINIS_FASKES', label: 'Email PIC Klinis Faskes', kategori: 'PIC & Kontak', auto_clone: true },
 
-  // === PAKTA & LAINNYA (auto_clone: false) ===
+  // === PAKTA & LAINNYA (mixed auto_clone) ===
   { key: 'TEMPAT_PAKTA', label: 'Tempat Pakta', kategori: 'Pakta & Lainnya', auto_clone: false },
   { key: 'BULAN_PAKTA', label: 'Bulan Pakta', kategori: 'Pakta & Lainnya', auto_clone: false },
+  { key: 'TAHUN_PAKTA', label: 'Tahun Pakta', kategori: 'Pakta & Lainnya', auto_clone: false },
   { key: 'NAMA_PIMPINAN_FASKES', label: 'Nama Pimpinan Faskes', kategori: 'Pakta & Lainnya', auto_clone: true },
   { key: 'JABATAN_PIMPINAN_FASKES', label: 'Jabatan Pimpinan Faskes', kategori: 'Pakta & Lainnya', auto_clone: true },
   { key: 'KOTA_PENGADILAN_NEGERI', label: 'Kota Pengadilan Negeri', kategori: 'Pakta & Lainnya', auto_clone: true },

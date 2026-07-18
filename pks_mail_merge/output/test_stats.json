@@ -1,0 +1,14 @@
+{
+  "replaced": 183,
+  "empty_filled": 15,
+  "missing_data": 0,
+  "missing_tokens": [],
+  "structure_valid": true,
+  "structure_diff": {
+    "body_paragraphs": 0,
+    "body_tables": 0,
+    "all_paragraphs": 0,
+    "all_tables": 0,
+    "all_runs": 0
+  }
+}
