@@ -1,14 +1,8 @@
 {
   "functions": {
     "api/pks_merge.py": {
-      "runtime": "@vercel/python@5.x",
       "memory": 1024,
       "maxDuration": 30
-    }
-  },
-  "build": {
-    "env": {
-      "PYTHON_RUNTIME_VERSION": "3.12"
     }
   }
 }
