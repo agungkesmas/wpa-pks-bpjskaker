@@ -1,30 +1,14 @@
 {
-  "crons": [
-    {
-      "path": "/api/cron/mutasi",
-      "schedule": "0 1 * * *"
-    }
-  ],
   "functions": {
-    "src/app/api/drafting/**/*.ts": { "maxDuration": 60 },
-    "src/app/api/dokumen-operasional/**/*.ts": { "maxDuration": 30 },
-    "src/app/api/template/upload/route.ts": { "maxDuration": 30 },
-    "src/app/api/pengajuan-dokumen/upload/route.ts": { "maxDuration": 30 },
-    "src/app/api/cm/pks-baru/create/route.ts": { "maxDuration": 30 },
-    "src/app/api/dropping-pusat/create/route.ts": { "maxDuration": 60 }
-  },
-  "headers": [
-    {
-      "source": "/_next/static/(.*)",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
-      ]
-    },
-    {
-      "source": "/logo.svg",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=86400" }
-      ]
+    "api/pks_merge.py": {
+      "runtime": "@vercel/python@5.x",
+      "memory": 1024,
+      "maxDuration": 30
     }
-  ]
+  },
+  "build": {
+    "env": {
+      "PYTHON_RUNTIME_VERSION": "3.12"
+    }
+  }
 }
