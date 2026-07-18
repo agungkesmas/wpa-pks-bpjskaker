@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-const PUBLIC_PATHS = ['/login', '/api/auth/login', '/api/auth/logout', '/api/setup', '/api/health']
+const PUBLIC_PATHS = ['/login', '/api/auth/login', '/api/auth/logout', '/api/setup', '/api/health', '/api/pks_merge']
 const PUBLIC_PREFIXES = ['/api/auth/', '/_next/', '/favicon.ico', '/logo.svg', '/robots.txt']
 
 export function middleware(req: NextRequest) {
